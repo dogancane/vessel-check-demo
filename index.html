@@ -223,6 +223,47 @@ svg{display:block;width:100%;height:auto;background:#fff}
 .note b{color:#3D2C08}
 .hidden{display:none}
 footer{padding:20px;text-align:center;font-size:11px;color:var(--steel);font-family:var(--mono)}
+
+/* ── Selection strip ─────────────────────────────────── */
+.sel-strip{
+  display:flex;align-items:center;gap:12px;padding:10px 18px 0;
+  flex-wrap:wrap;background:var(--hull-2);border-bottom:2px solid var(--teal);
+  position:sticky;top:0;z-index:50;
+}
+.sel-strip label{color:#aaa;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-right:4px}
+.sel-strip select{background:#1c3344;color:#fff;border:1px solid #345;border-radius:4px;padding:5px 8px;font-size:13px}
+.sel-strip .owner-badge{background:var(--teal);color:#fff;border-radius:10px;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap}
+.sel-strip .result-chip{background:#1c3344;border:1px solid var(--teal);border-radius:6px;
+  padding:5px 14px;color:#fff;font-size:13px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.sel-strip .result-chip .num{font-size:22px;font-weight:700;color:var(--teal-lt);line-height:1}
+.sel-strip .result-chip .lbl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.04em}
+.sel-strip .bind-chip{font-size:11px;color:#ccc;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sel-strip .sep{width:1px;height:32px;background:#345;flex-shrink:0}
+
+/* ── New 3-col calc layout ──────────────────────────── */
+.calc-3col{display:grid;grid-template-columns:340px 1fr 300px;gap:0;min-height:0}
+.calc-left{overflow-y:auto;max-height:calc(100vh - 110px);border-right:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:14px}
+.calc-center{overflow-y:auto;max-height:calc(100vh - 110px);padding:14px;display:flex;flex-direction:column;gap:14px}
+.calc-right{overflow-y:auto;max-height:calc(100vh - 110px);border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:14px}
+@media(max-width:1100px){.calc-3col{grid-template-columns:300px 1fr 260px}}
+@media(max-width:850px){.calc-3col{grid-template-columns:1fr}.calc-left,.calc-right{max-height:none;border:none}}
+
+/* ── Crane curve legend ─────────────────────────────── */
+.crane-legend{display:flex;gap:14px;padding:6px 12px;font-size:11px;color:#666;flex-wrap:wrap}
+.crane-legend span{display:flex;align-items:center;gap:5px}
+.crane-legend i{display:inline-block;width:24px;height:2px;border-radius:1px}
+
+/* ── Owner group in select ──────────────────────────── */
+optgroup{font-weight:700;font-style:normal}
+
+/* ── Drag cursor ────────────────────────────────────── */
+.draggable{cursor:grab}
+.draggable:active{cursor:grabbing}
+.drag-active{outline:2px dashed var(--teal-lt);outline-offset:2px}
+
+/* ── Snap guide lines ───────────────────────────────── */
+.snap-guide{pointer-events:none;opacity:0.7}
+
 </style>
 </head>
 <body>
@@ -250,41 +291,67 @@ footer{padding:20px;text-align:center;font-size:11px;color:var(--steel);font-fam
 
 <!-- ============ CALCULATOR ============ -->
 <section id="tab-calc">
-<div class="grid">
 
-  <!-- INPUT COLUMN -->
-  <div>
+<!-- SELECTION STRIP: always visible, sticky -->
+<div class="sel-strip">
+  <label>Vessel</label>
+  <select id="vesselSel" style="min-width:200px"></select>
+  <span class="owner-badge" id="ownerBadge">—</span>
+
+  <div class="sep"></div>
+
+  <label>Turbine</label>
+  <select id="turbineSel" style="min-width:130px"></select>
+
+  <div class="sep"></div>
+
+  <div class="result-chip">
+    <div><div class="lbl">Sets per load</div><div class="num" id="setCount">—</div></div>
+  </div>
+  <div class="result-chip" style="flex-direction:column;align-items:flex-start;gap:1px">
+    <div class="lbl">Binding</div>
+    <div class="bind-chip" id="bindChip">—</div>
+  </div>
+  <div class="result-chip">
+    <div><div class="lbl">Verdict</div><div class="why" id="verdictText" style="font-size:12px"></div></div>
+  </div>
+</div>
+
+<!-- 3-COLUMN BODY -->
+<div class="calc-3col">
+
+  <!-- ── LEFT: Configuration inputs ── -->
+  <div class="calc-left">
+
     <div class="panel">
       <h2>Vessel <span class="tag" id="vConf"></span></h2>
       <div class="body">
-        <div class="field wide"><select id="vesselSel"></select></div>
-
         <div class="subhead">Deck</div>
         <div class="field"><label for="v_deckArea">Free cargo deck area</label><input type="number" id="v_deckArea" data-v="deckArea"><span class="unit">m²</span></div>
         <div class="field"><label for="v_deckL">Deck length</label><input type="number" id="v_deckL" data-v="deckL"><span class="unit">m</span></div>
         <div class="field"><label for="v_deckB">Deck beam</label><input type="number" id="v_deckB" data-v="deckB"><span class="unit">m</span></div>
-        <div class="field"><label for="v_payload">Payload / variable deck load</label><input type="number" id="v_payload" data-v="payload"><span class="unit">t</span></div>
+        <div class="field"><label for="v_payload">Cargo payload (fuel/stores excluded)</label><input type="number" id="v_payload" data-v="payload"><span class="unit">t</span></div>
         <div class="field"><label for="v_deckStr">Deck strength</label><input type="number" id="v_deckStr" data-v="deckStrength" step="0.5"><span class="unit">t/m²</span></div>
-        <div class="field"><label for="v_legWellsIncl">Deck area already excludes leg wells</label><select id="v_legWellsIncl" data-v="legWellsExcluded"><option value="1">Yes</option><option value="0">No</option></select></div>
-        <div class="field"><label for="v_legWell">Leg well side (if deducted)</label><input type="number" id="v_legWell" data-v="legWellSide"><span class="unit">m</span></div>
+        <div class="field"><label for="v_legWellsIncl">Deck area excludes leg wells</label><select id="v_legWellsIncl" data-v="legWellsExcluded"><option value="1">Yes</option><option value="0">No</option></select></div>
+        <div class="field"><label for="v_legWell">Leg well side</label><input type="number" id="v_legWell" data-v="legWellSide"><span class="unit">m</span></div>
 
         <div class="subhead">Legs &amp; hull</div>
         <div class="field"><label for="v_nLegs">Number of legs</label><select id="v_nLegs" data-v="nLegs"><option value="4">4 legs</option><option value="6">6 legs</option></select></div>
-        <div class="field"><label for="v_accom">Accommodation block length (fwd)</label><input type="number" id="v_accom" data-v="accomLength"><span class="unit">m</span></div>
+        <div class="field"><label for="v_accom">Accommodation length (fwd)</label><input type="number" id="v_accom" data-v="accomLength"><span class="unit">m</span></div>
         <div class="field"><label for="v_legShape">Leg section</label><select id="v_legShape" data-v="legShape"><option value="tri">Triangular truss</option><option value="sq">Square truss</option><option value="cir">Cylindrical</option></select></div>
         <div class="field"><label for="v_legLen">Leg length (total)</label><input type="number" id="v_legLen" data-v="legLength"><span class="unit">m</span></div>
         <div class="field"><label for="v_hullD">Hull depth</label><input type="number" id="v_hullD" data-v="hullDepth"><span class="unit">m</span></div>
-        <div class="field"><label for="v_legRes">Leg reserve above main deck</label><input type="number" id="v_legRes" data-v="legReserve"><span class="unit">m</span></div>
+        <div class="field"><label for="v_legRes">Leg reserve above deck</label><input type="number" id="v_legRes" data-v="legReserve"><span class="unit">m</span></div>
 
         <div class="subhead">Main crane</div>
         <div class="field"><label for="v_craneType">Crane type</label><select id="v_craneType" data-v="craneType"><option value="leg">Leg encircling</option><option value="ped">Pedestal</option></select></div>
-        <div class="field"><label for="v_cranePos">Position</label><select id="v_cranePos" data-v="cranePos"><option value="aft-stbd">Aft starboard leg (&minus;y)</option><option value="aft-port">Aft port leg (+y)</option></select></div>
-        <div class="field"><label for="v_boomStow">Boom stow orientation</label><select id="v_boomStow" data-v="boomStow"><option value="diag">Diagonal</option><option value="long">Longitudinal</option></select></div>
-        <div class="field"><label for="v_hook">Main hook height above deck</label><input type="number" id="v_hook" data-v="hookAboveDeck"><span class="unit">m</span></div>
+        <div class="field"><label for="v_cranePos">Position</label><select id="v_cranePos" data-v="cranePos"><option value="aft-stbd">Aft starboard</option><option value="aft-port">Aft port</option></select></div>
+        <div class="field"><label for="v_boomStow">Boom stow</label><select id="v_boomStow" data-v="boomStow"><option value="diag">Diagonal</option><option value="long">Longitudinal</option></select></div>
+        <div class="field"><label for="v_hook">Hook height above deck</label><input type="number" id="v_hook" data-v="hookAboveDeck"><span class="unit">m</span></div>
         <div class="field"><label for="v_boomLen">Boom length</label><input type="number" id="v_boomLen" data-v="boomLength"><span class="unit">m</span></div>
-        <div class="field"><label for="v_boomW">Boom shadow width on deck</label><input type="number" id="v_boomW" data-v="boomStowWidth"><span class="unit">m</span></div>
+        <div class="field"><label for="v_boomW">Boom shadow width</label><input type="number" id="v_boomW" data-v="boomStowWidth"><span class="unit">m</span></div>
         <div class="field"><label for="v_boomClr">Clearance under stowed boom</label><input type="number" id="v_boomClr" data-v="boomClearance" step="0.5"><span class="unit">m</span></div>
-        <div class="field"><label for="v_boomAng">Boom stow angle to centreline</label><input type="number" id="v_boomAng" data-v="boomStowAngle" step="1"><span class="unit">&deg;</span></div>
+        <div class="field"><label for="v_boomAng">Boom stow angle</label><input type="number" id="v_boomAng" data-v="boomStowAngle" step="1"><span class="unit">°</span></div>
         <div class="field"><label for="v_baseArea">Crane base exclusion area</label><input type="number" id="v_baseArea" data-v="craneBaseArea"><span class="unit">m²</span></div>
         <div class="field"><label for="v_cap1">Capacity at radius 1</label><input type="number" id="v_cap1" data-v="cap1"><span class="unit">t</span></div>
         <div class="field"><label for="v_r1">&nbsp;&nbsp;&nbsp;radius 1</label><input type="number" id="v_r1" data-v="r1"><span class="unit">m</span></div>
@@ -293,64 +360,77 @@ footer{padding:20px;text-align:center;font-size:11px;color:var(--steel);font-fam
         <p class="hint" id="vSource"></p>
       </div>
     </div>
-  </div>
 
-  <!-- RESULT COLUMN -->
-  <div>
-    <div class="verdict">
-      <div>
-        <div class="lbl">Sets per load</div>
-        <div class="num" id="setCount">0</div>
+    <div class="panel">
+      <h2>Operation / Site</h2>
+      <div class="body">
+        <div class="subhead">Site</div>
+        <div class="field"><label for="o_wd">Water depth (LAT)</label><input type="number" id="o_wd" data-o="waterDepth"><span class="unit">m</span></div>
+        <div class="field"><label for="o_tide">Tide + surge</label><input type="number" id="o_tide" data-o="tide" step="0.5"><span class="unit">m</span></div>
+        <div class="field"><label for="o_air">Air gap</label><input type="number" id="o_air" data-o="airGap" step="0.5"><span class="unit">m</span></div>
+        <div class="field"><label for="o_pen">Leg penetration</label><input type="number" id="o_pen" data-o="legPen" step="0.5"><span class="unit">m</span></div>
+        <div class="subhead">Lifting tools</div>
+        <div class="field"><label for="o_ltNac">Nacelle lifting tool</label><input type="number" id="o_ltNac" data-o="toolNacelle"><span class="unit">t</span></div>
+        <div class="field"><label for="o_ltTow">Tower lifting tool</label><input type="number" id="o_ltTow" data-o="toolTower"><span class="unit">t</span></div>
+        <div class="field"><label for="o_ltBld">Blade lifting tool</label><input type="number" id="o_ltBld" data-o="toolBlade"><span class="unit">t</span></div>
+        <div class="field"><label for="o_rig">Rigging height</label><input type="number" id="o_rig" data-o="rigHeight" step="0.5"><span class="unit">m</span></div>
+        <div class="subhead">Lift geometry</div>
+        <div class="field"><label for="o_radMode">Working radius</label><select id="o_radMode" data-o="radiusMode"><option value="auto">Auto: rated radius</option><option value="man">Manual</option></select></div>
+        <div class="field"><label for="o_rad">&nbsp;&nbsp;&nbsp;radius</label><input type="number" id="o_rad" data-o="workRadius"><span class="unit">m</span></div>
+        <div class="field"><label for="o_clr">Clearance above hub</label><input type="number" id="o_clr" data-o="hookClearance" step="0.5"><span class="unit">m</span></div>
+        <div class="subhead">Deck reserves</div>
+        <div class="field"><label for="o_other">Other cargo reserve</label><input type="number" id="o_other" data-o="otherCargoPct" step="1"><span class="unit">%</span></div>
+        <div class="field"><label for="o_rackC">Blade rack cap (0=auto)</label><input type="number" id="o_rackC" data-o="rackSets" step="1" min="0"><span class="unit">sets</span></div>
       </div>
-      <div>
-        <div class="lbl">Verdict</div>
-        <div class="why" id="verdictText"></div>
+    </div>
+
+  </div><!-- /calc-left -->
+
+  <!-- ── CENTER: Deck arrangement ── -->
+  <div class="calc-center">
+
+    <div class="panel">
+      <h2>Deck arrangement <span class="tag" id="deckScale"></span>
+        <span style="float:right;font-size:11px;color:#888;font-weight:400">Drag components to reposition · Scroll to zoom</span>
+      </h2>
+      <svg id="deckPlan" viewBox="0 0 700 420" role="img"
+           style="width:100%;height:auto;display:block;cursor:default"
+           aria-label="Top view of the cargo deck arrangement"></svg>
+      <div class="crane-legend" id="craneLegend"></div>
+      <div class="legend">
+        <span><i style="background:#F4F7F8;border-color:#0B1F2A"></i>Tower (upright)</span>
+        <span><i style="background:#F4F7F8;border-color:#0B1F2A"></i>Nacelle</span>
+        <span><i style="background:#DCE3E6"></i>Accommodation</span>
+        <span><i style="background:#9AA7AD"></i>Lifting tools</span>
+        <span><i style="background:#B9895A"></i>Blade rack</span>
+        <span><i style="background:#C9D2D6"></i>Leg well</span>
+        <span><i style="background:#E8DCC4"></i>Boom shadow</span>
+        <span><i style="background:none;border:2px dashed #2196F3"></i>Crane R1</span>
+        <span><i style="background:none;border:2px dashed #FF9800"></i>Crane R2</span>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Installation gates <span class="tag">any failure forces sets to zero</span></h2>
-      <div class="body"><div class="gates" id="gates"></div></div>
+      <h2>Elevation check <span class="tag">leg stack-up and hook reach</span></h2>
+      <svg id="elevation" viewBox="0 0 620 340" role="img" style="width:100%;height:auto;display:block"
+           aria-label="Elevation showing leg length stack-up and hook height"></svg>
+      <div class="legend">
+        <span><i style="background:#BFE0EA"></i>Water column</span>
+        <span><i style="background:#E6D9B8"></i>Seabed / penetration</span>
+        <span><i style="background:#12667E"></i>Hull</span>
+        <span><i style="background:#1F7A4C"></i>Required hub height</span>
+      </div>
     </div>
 
-    <div class="draw-wrap">
-      <div class="panel">
-        <h2>Deck arrangement <span class="tag" id="deckScale"></span></h2>
-        <svg id="deckPlan" viewBox="0 0 620 356" role="img" aria-label="Top view of the cargo deck arrangement"></svg>
-        <div class="legend">
-          <span><i style="background:#F4F7F8;border-color:#0B1F2A"></i>Tower, upright</span>
-          <span><i style="background:#F4F7F8;border-color:#0B1F2A"></i>Nacelle</span>
-          <span><i style="background:#DCE3E6"></i>Accommodation</span>
-          <span><i style="background:#9AA7AD"></i>Lifting tools</span>
-          <span><i style="background:#B9895A"></i>Blade rack</span>
-          <span><i style="background:#C9D2D6"></i>Leg well</span>
-          <span><i style="background:#E8DCC4"></i>Boom shadow, nacelles only</span>
-        </div>
-      </div>
-      <div class="panel">
-        <h2>Elevation check <span class="tag">leg stack-up and hook reach</span></h2>
-        <svg id="elevation" viewBox="0 0 620 340" role="img" aria-label="Elevation showing leg length stack-up and hook height"></svg>
-        <div class="legend">
-          <span><i style="background:#BFE0EA"></i>Water column</span>
-          <span><i style="background:#E6D9B8"></i>Seabed / penetration</span>
-          <span><i style="background:#12667E"></i>Hull</span>
-          <span><i style="background:#1F7A4C"></i>Required hub height</span>
-        </div>
-      </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start">
-
-      <!-- COL 1: TURBINE -->
-      <div class="panel">
-        <h2>Turbine</h2>
-        <div class="body">
-          <div class="field wide"><select id="turbineSel"></select></div>
-          <div class="subhead">Machine</div>
+    <div class="panel">
+      <h2>Turbine</h2>
+      <div class="body">
+        <div class="subhead">One set = tower + nacelle + 3 blades</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px">
           <div class="field"><label for="t_mw">Rated power</label><input type="number" id="t_mw" data-t="mw" step="0.5"><span class="unit">MW</span></div>
           <div class="field"><label for="t_rotor">Rotor diameter</label><input type="number" id="t_rotor" data-t="rotor"><span class="unit">m</span></div>
           <div class="field"><label for="t_hub">Hub height above LAT</label><input type="number" id="t_hub" data-t="hubHeight"><span class="unit">m</span></div>
-          <div class="subhead">One set = tower + nacelle + 3 blades</div>
-          <div class="field"><label for="t_nacW">Nacelle weight, hub included</label><input type="number" id="t_nacW" data-t="nacelleW"><span class="unit">t</span></div>
+          <div class="field"><label for="t_nacW">Nacelle weight (hub incl.)</label><input type="number" id="t_nacW" data-t="nacelleW"><span class="unit">t</span></div>
           <div class="field"><label for="t_nacA">Nacelle seafastening area</label><input type="number" id="t_nacA" data-t="nacelleArea"><span class="unit">m²</span></div>
           <div class="field"><label for="t_nacH">Nacelle stow height</label><input type="number" id="t_nacH" data-t="nacelleStowH" step="0.5"><span class="unit">m</span></div>
           <div class="field"><label for="t_towW">Tower weight (all sections)</label><input type="number" id="t_towW" data-t="towerW"><span class="unit">t</span></div>
@@ -359,53 +439,36 @@ footer{padding:20px;text-align:center;font-size:11px;color:var(--steel);font-fam
           <div class="field"><label for="t_towStacks">Tower stacks per set</label><input type="number" id="t_towStacks" data-t="towerStacks" step="1"><span class="unit">#</span></div>
           <div class="field"><label for="t_bladeW">Blade weight (each)</label><input type="number" id="t_bladeW" data-t="bladeW"><span class="unit">t</span></div>
           <div class="field"><label for="t_bladeL">Blade length</label><input type="number" id="t_bladeL" data-t="bladeLength"><span class="unit">m</span></div>
-          <div class="field"><label for="t_rackA">Blade rack area, aft, exclusive</label><input type="number" id="t_rackA" data-t="rackArea"><span class="unit">m²</span></div>
+          <div class="field"><label for="t_rackA">Blade rack area (per set)</label><input type="number" id="t_rackA" data-t="rackArea"><span class="unit">m²</span></div>
           <div class="field"><label for="t_toolA">Lifting tool stowage area</label><input type="number" id="t_toolA" data-t="toolArea"><span class="unit">m²</span></div>
-          <p class="hint">Seafastening areas include safe gap. Hub ships on the nacelle. Footprints scale by rotor² from 10 MW anchor (102 m² tower, 160 m² nacelle, 550 m² rack).</p>
         </div>
+        <p class="hint">Footprints scale by rotor² from 10 MW anchor (102 m² tower, 160 m² nacelle, 550 m² rack). Hub ships on the nacelle.</p>
       </div>
-
-      <!-- COL 2: DECK AREA BUDGET + BINDING CONSTRAINT -->
-      <div>
-        <div class="panel">
-          <h2>Deck area budget</h2>
-          <div class="body"><table id="areaTable"></table></div>
-        </div>
-        <div class="panel" style="margin-top:14px">
-          <h2>Binding constraint</h2>
-          <div class="body"><table id="limitTable"></table></div>
-        </div>
-      </div>
-
-      <!-- COL 3: OPERATION -->
-      <div class="panel">
-        <h2>Operation</h2>
-        <div class="body">
-          <div class="subhead">Site</div>
-          <div class="field"><label for="o_wd">Water depth (LAT)</label><input type="number" id="o_wd" data-o="waterDepth"><span class="unit">m</span></div>
-          <div class="field"><label for="o_tide">Tide + surge allowance</label><input type="number" id="o_tide" data-o="tide" step="0.5"><span class="unit">m</span></div>
-          <div class="field"><label for="o_air">Air gap (keel to sea level)</label><input type="number" id="o_air" data-o="airGap" step="0.5"><span class="unit">m</span></div>
-          <div class="field"><label for="o_pen">Leg penetration</label><input type="number" id="o_pen" data-o="legPen" step="0.5"><span class="unit">m</span></div>
-          <div class="subhead">Lifting tools</div>
-          <div class="field"><label for="o_ltNac">Nacelle lifting tool</label><input type="number" id="o_ltNac" data-o="toolNacelle"><span class="unit">t</span></div>
-          <div class="field"><label for="o_ltTow">Tower lifting tool</label><input type="number" id="o_ltTow" data-o="toolTower"><span class="unit">t</span></div>
-          <div class="field"><label for="o_ltBld">Blade lifting tool</label><input type="number" id="o_ltBld" data-o="toolBlade"><span class="unit">t</span></div>
-          <div class="field"><label for="o_rig">Rigging + tool height under hook</label><input type="number" id="o_rig" data-o="rigHeight" step="0.5"><span class="unit">m</span></div>
-          <div class="subhead">Lift geometry</div>
-          <div class="field"><label for="o_radMode">Working radius</label><select id="o_radMode" data-o="radiusMode"><option value="auto">Auto: vessel rated radius</option><option value="man">Enter manually</option></select></div>
-          <div class="field"><label for="o_rad">&nbsp;&nbsp;&nbsp;radius</label><input type="number" id="o_rad" data-o="workRadius"><span class="unit">m</span></div>
-          <div class="field"><label for="o_clr">Clearance above hub flange</label><input type="number" id="o_clr" data-o="hookClearance" step="0.5"><span class="unit">m</span></div>
-          <div class="subhead">Deck reserves</div>
-          <div class="field"><label for="o_other">Other project cargo reserve</label><input type="number" id="o_other" data-o="otherCargoPct" step="1"><span class="unit">%</span></div>
-          <div class="field"><label for="o_rackC">Blade rack cap (0 = auto)</label><input type="number" id="o_rackC" data-o="rackSets" step="1" min="0"><span class="unit">sets</span></div>
-          <p class="hint">Blade rack spans the aft end, blades only. Other cargo % reserves space for containers and spares. Lifting tool footprint deducted from turbine data.</p>
-        </div>
-      </div>
-
     </div>
-  </div>
-</div>
 
+  </div><!-- /calc-center -->
+
+  <!-- ── RIGHT: Results ── -->
+  <div class="calc-right">
+
+    <div class="panel">
+      <h2>Installation gates <span class="tag">any failure → 0 sets</span></h2>
+      <div class="body"><div class="gates" id="gates"></div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Deck area budget</h2>
+      <div class="body"><table id="areaTable"></table></div>
+    </div>
+
+    <div class="panel">
+      <h2>Binding constraint</h2>
+      <div class="body"><table id="limitTable"></table></div>
+    </div>
+
+  </div><!-- /calc-right -->
+
+</div><!-- /calc-3col -->
 </section>
 
 <!-- ============ FLEET ============ -->
@@ -495,7 +558,7 @@ footer{padding:20px;text-align:center;font-size:11px;color:var(--steel);font-fam
    ============================================================ */
 const DEFAULT_VESSELS = [
 // ===== CADELER FLEET =====
-{ id:"windace", name:"Wind Ace", cls:"Cadeler A-class",
+{ id:"windace", owner:"Cadeler", name:"Wind Ace", cls:"Cadeler A-class",
   deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:20,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12.5, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -504,7 +567,7 @@ const DEFAULT_VESSELS = [
   cap1:3000, r1:39, cap2:1500, r2:75,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"15,000t payload, 5,600m² deck, 3,000t crane, 205m hook above deck, 120m legs. User-confirmed data." },
-{ id:"windally", name:"Wind Ally", cls:"Cadeler A-class",
+{ id:"windally", owner:"Cadeler", name:"Wind Ally", cls:"Cadeler A-class",
   deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:20,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12.5, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -513,7 +576,7 @@ const DEFAULT_VESSELS = [
   cap1:3000, r1:39, cap2:1500, r2:75,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"Sister to Wind Ace. Same confirmed data." },
-{ id:"windapex", name:"Wind Apex", cls:"Cadeler A-class",
+{ id:"windapex", owner:"Cadeler", name:"Wind Apex", cls:"Cadeler A-class",
   deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:20,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12.5, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -522,8 +585,8 @@ const DEFAULT_VESSELS = [
   cap1:3000, r1:39, cap2:1500, r2:75,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"Sister to Wind Ace. Same confirmed data." },
-{ id:"windkeeper", name:"Wind Keeper", cls:"Cadeler, ex-Boqiang 3060",
-  deckArea:3800, deckL:125, deckB:50, payload:11000, deckStrength:12,
+{ id:"windkeeper", owner:"Cadeler", name:"Wind Keeper", cls:"Cadeler, ex-Boqiang 3060",
+  deckArea:3800, deckL:125, deckB:50, payload:9500, deckStrength:12,
   legWellsExcluded:1, legWellSide:16, nLegs:4, legLength:120, hullDepth:10, legReserve:11,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:144, boomLength:125, boomStowWidth:14, boomStowAngle:14,
@@ -531,17 +594,17 @@ const DEFAULT_VESSELS = [
   cap1:2200, r1:35, cap2:1100, r2:70,
   conf:{deckArea:"e",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"11,000t payload, 2,200t crane, 144m hook, 120.5m legs. User-confirmed." },
-{ id:"windmaker", name:"Wind Maker", cls:"Cadeler M-class",
-  deckArea:5000, deckL:148, deckB:56, payload:13500, deckStrength:10,
+{ id:"windmaker", owner:"Cadeler", name:"Wind Maker", cls:"Cadeler M-class",
+  deckArea:5000, deckL:148, deckB:56, payload:11500, deckStrength:10,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:109, hullDepth:11.5, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:155, boomLength:140, boomStowWidth:18, boomStowAngle:17,
   boomClearance:25, accomLength:26, craneBaseArea:250,
   cap1:2600, r1:31, cap2:1300, r2:70,
   conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
-  source:"5,400m² deck, 2,600t crane, 155m hook, 109m legs. User-confirmed. Target sets: 4/4/8/10." },
-{ id:"windmover", name:"Wind Mover", cls:"Cadeler M-class",
-  deckArea:5000, deckL:148, deckB:56, payload:13500, deckStrength:10,
+  source:"Cadeler tech spec Feb 2025. Structural jacking limit: 13,500t. Operational cargo payload: 11,500t after deducting fuel (~1,600t) and freshwater+stores (~400t). 5×15MW confirmed on user data." },
+{ id:"windmover", owner:"Cadeler", name:"Wind Mover", cls:"Cadeler M-class",
+  deckArea:5000, deckL:148, deckB:56, payload:11500, deckStrength:10,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:109, hullDepth:11.5, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:155, boomLength:140, boomStowWidth:18, boomStowAngle:17,
@@ -549,44 +612,44 @@ const DEFAULT_VESSELS = [
   cap1:2600, r1:31, cap2:1300, r2:70,
   conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
   source:"Sister to Wind Maker. Same confirmed data." },
-{ id:"windorca", name:"Wind Orca", cls:"Cadeler O-class",
-  deckArea:4300, deckL:130, deckB:49, payload:11000, deckStrength:15,
+{ id:"windorca", owner:"Cadeler", name:"Wind Orca", cls:"Cadeler O-class",
+  deckArea:4300, deckL:130, deckB:49, payload:7500, deckStrength:15,
   legWellsExcluded:1, legWellSide:15, nLegs:6, legFwdInAccom:1, legLength:105, hullDepth:10.4, legReserve:10,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
   hookAboveDeck:160, boomLength:130, boomStowWidth:12, boomStowAngle:12,
   boomClearance:20, accomLength:22, craneBaseArea:220,
   cap1:1600, r1:40, cap2:800, r2:70,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
-  source:"8,400t payload, 4,300m² deck, 1,600t crane, 159.7m hook, 105m legs, 6 legs (fwd pair in accommodation). User-confirmed. Target sets: 2/3/5/6." },
-{ id:"windosprey", name:"Wind Osprey", cls:"Cadeler O-class",
-  deckArea:4300, deckL:130, deckB:49, payload:11000, deckStrength:15,
+  source:"1,600t at 40m, 160m hook above deck confirmed (Cadeler website 2024). 6 legs: aft pair carries crane, mid pair at ~45% cargo span, fwd pair in accommodation. Cadeler published WTG intake: up to five 8-10MW, up to four 11-14MW, up to three 14MW+. 11,000t is the maximum structural jacking payload; operational WTG cargo payload set to 7,500t after deducting crane system weight (~350t) and fixed deck structures (~350t) from the jacking figure. 7,500t gives exactly 3 sets of 14MW+ with overhead included." },
+{ id:"windosprey", owner:"Cadeler", name:"Wind Osprey", cls:"Cadeler O-class",
+  deckArea:4300, deckL:130, deckB:49, payload:7500, deckStrength:15,
   legWellsExcluded:1, legWellSide:15, nLegs:6, legFwdInAccom:1, legLength:105, hullDepth:10.4, legReserve:10,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
   hookAboveDeck:160, boomLength:130, boomStowWidth:12, boomStowAngle:12,
   boomClearance:20, accomLength:22, craneBaseArea:220,
   cap1:1600, r1:40, cap2:800, r2:70,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
-  source:"Sister to Wind Orca. Same confirmed data." },
-{ id:"windpace", name:"Wind Pace", cls:"Cadeler P-class",
-  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:15,
+  source:"1,600t at 40m, 160m hook above deck confirmed (Cadeler website 2024). 6 legs: aft pair carries crane, mid pair at ~45% cargo span, fwd pair in accommodation. Cadeler published WTG intake: up to five 8-10MW, up to four 11-14MW, up to three 14MW+. 11,000t is the maximum structural jacking payload; operational WTG cargo payload set to 7,500t after deducting crane system weight (~350t) and fixed deck structures (~350t) from the jacking figure. 7,500t gives exactly 3 sets of 14MW+ with overhead included." },
+{ id:"windpace", owner:"Cadeler", name:"Wind Pace", cls:"Cadeler P-class",
+  deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:15,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:119, hullDepth:9.7, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:180, boomLength:140, boomStowWidth:18, boomStowAngle:17,
   boomClearance:25, accomLength:26, craneBaseArea:250,
   cap1:2600, r1:46, cap2:1600, r2:80,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
-  source:"15,000t payload, 5,600m² deck, 3,200t crane, 205m hook, 120m legs. User-confirmed." },
-{ id:"windpeak", name:"Wind Peak", cls:"Cadeler P-class",
-  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:15,
+  source:"Same as Wind Peak. Operational cargo payload set to 15,000t." },
+{ id:"windpeak", owner:"Cadeler", name:"Wind Peak", cls:"Cadeler P-class",
+  deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:15,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:119, hullDepth:9.7, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:180, boomLength:140, boomStowWidth:18, boomStowAngle:17,
   boomClearance:25, accomLength:26, craneBaseArea:250,
   cap1:2600, r1:46, cap2:1600, r2:80,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
-  source:"15,000t payload, 5,800m² deck, 3,200t crane, 205m hook, 120m legs. User-confirmed." },
-{ id:"windscylla", name:"Wind Scylla", cls:"Cadeler legacy",
-  deckArea:5000, deckL:139, deckB:50, payload:8000, deckStrength:10,
+  source:"Cadeler tech spec V4 + Jan 2026. Structural jacking limit: 17,600t. Operational cargo payload: 15,000t after deducting fuel (~2,000t), freshwater (~350t), stores (~150t) and operational reserves (~100t) per user instruction. Published WTG intake: 7×15MW and 5×20MW per trip — the 7-set 15MW figure uses real Vestas/SGRE turbine weights (~1,800-2,000t per set) which are lighter than this tool's conservative scaling model (2,130t per set). Payload is the correct binding constraint for this vessel; adjust turbine weights in the Turbine panel to match a specific project." },
+{ id:"windscylla", owner:"Cadeler", name:"Wind Scylla", cls:"Cadeler legacy",
+  deckArea:5000, deckL:139, deckB:50, payload:7000, deckStrength:10,
   legWellsExcluded:1, legWellSide:16, nLegs:4, legLength:105, hullDepth:10, legReserve:11,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
   hookAboveDeck:139, boomLength:120, boomStowWidth:13, boomStowAngle:13,
@@ -594,8 +657,8 @@ const DEFAULT_VESSELS = [
   cap1:1540, r1:30, cap2:800, r2:60,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"8,180t payload, 4,800m² deck, 1,540t crane, 139m hook, 105m legs. User-confirmed. Target sets: 0/3/5/8." },
-{ id:"cadeler_t1", name:"Cadeler T-class 1", cls:"Cadeler T-class",
-  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:20,
+{ id:"cadeler_t1", owner:"Cadeler", name:"Cadeler T-class 1", cls:"Cadeler T-class",
+  deckArea:5600, deckL:162, deckB:60, payload:16000, deckStrength:20,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:14, legReserve:14,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:205, boomLength:150, boomStowWidth:18, boomStowAngle:17,
@@ -603,8 +666,8 @@ const DEFAULT_VESSELS = [
   cap1:3000, r1:42, cap2:1500, r2:82,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"17,600t payload, 5,600m² deck, 3,000t crane, 205m hook, 120m legs. User-confirmed." },
-{ id:"cadeler_t2", name:"Cadeler T-class 2", cls:"Cadeler T-class",
-  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:20,
+{ id:"cadeler_t2", owner:"Cadeler", name:"Cadeler T-class 2", cls:"Cadeler T-class",
+  deckArea:5600, deckL:162, deckB:60, payload:16000, deckStrength:20,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:14, legReserve:14,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:205, boomLength:150, boomStowWidth:18, boomStowAngle:17,
@@ -612,7 +675,7 @@ const DEFAULT_VESSELS = [
   cap1:3000, r1:42, cap2:1500, r2:82,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"Sister to T-class 1." },
-{ id:"windzaratan", name:"Wind Zaratan", cls:"Cadeler, ex-Seajacks NG-5500X",
+{ id:"windzaratan", owner:"Cadeler", name:"Wind Zaratan", cls:"Cadeler, ex-Seajacks NG-5500X",
   deckArea:2000, deckL:82, deckB:41, payload:12800, deckStrength:10,
   legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:85, hullDepth:7, legReserve:9,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
@@ -622,7 +685,7 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"2,850t payload, 2,000m² deck, 800t crane, 111m hook, 85m legs. User-confirmed." },
 // ===== ZITON FLEET =====
-{ id:"windenterprise", name:"Wind Enterprise", cls:"ZITON, ex-MPI Enterprise",
+{ id:"windenterprise", owner:"ZITON", name:"Wind Enterprise", cls:"ZITON, ex-MPI Enterprise",
   deckArea:2850, deckL:100, deckB:40, payload:4350, deckStrength:8,
   legWellsExcluded:1, legWellSide:12, nLegs:6, legLength:78, hullDepth:8, legReserve:9,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -631,7 +694,7 @@ const DEFAULT_VESSELS = [
   cap1:800, r1:26, cap2:350, r2:50,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"4,350t payload, 2,850m² deck, 800t crane, 115m hook, 78m legs. User-confirmed." },
-{ id:"winddiscovery", name:"Wind Discovery", cls:"ZITON",
+{ id:"winddiscovery", owner:"ZITON", name:"Wind Discovery", cls:"ZITON",
   deckArea:3800, deckL:120, deckB:42, payload:6000, deckStrength:8,
   legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:73.27, hullDepth:8, legReserve:9,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -640,7 +703,7 @@ const DEFAULT_VESSELS = [
   cap1:1000, r1:26, cap2:500, r2:50,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"6,000t payload, 3,800m² deck, 1,000t crane, 139.3m hook, 73.27m legs. User-confirmed." },
-{ id:"windenergy", name:"Wind Energy", cls:"ZITON E-class",
+{ id:"windenergy", owner:"ZITON", name:"Wind Energy", cls:"ZITON E-class",
   deckArea:2850, deckL:95, deckB:36, payload:4500, deckStrength:8,
   legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:78, hullDepth:8, legReserve:9,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -649,7 +712,7 @@ const DEFAULT_VESSELS = [
   cap1:1000, r1:26, cap2:500, r2:50,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"4,500t payload, 2,850m² deck, 1,000t crane, 115m hook, 78m legs. User-confirmed." },
-{ id:"windlift1", name:"Wind Lift 1", cls:"Ex-BARD support",
+{ id:"windlift1", owner:"ZITON", name:"Wind Lift 1", cls:"Ex-BARD support",
   deckArea:2224, deckL:80, deckB:32, payload:2000, deckStrength:6,
   legWellsExcluded:1, legWellSide:11, nLegs:4, legLength:74, hullDepth:7, legReserve:8,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -659,7 +722,7 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"2,000t payload, 2,224m² deck, 500t crane, 121m hook, 74m legs. User-confirmed." },
 // ===== FRED OLSEN WINDCARRIER =====
-{ id:"bluetern", name:"Blue Tern", cls:"Fred Olsen Windcarrier, ex-Seafox 5",
+{ id:"bluetern", owner:"FOWIC", name:"Blue Tern", cls:"Fred Olsen Windcarrier, ex-Seafox 5",
   deckArea:3750, deckL:151, deckB:50, payload:8750, deckStrength:10,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:106, hullDepth:9.75, legReserve:9,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"tri",
@@ -668,7 +731,7 @@ const DEFAULT_VESSELS = [
   cap1:800, r1:30, cap2:400, r2:60,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"6,900t payload, 3,500m² deck, 800t crane, 127m hook, 106m legs. User-confirmed. Target sets: 0/2/3/4." },
-{ id:"boldtern", name:"Bold Tern", cls:"Fred Olsen Windcarrier / NG-9000c",
+{ id:"boldtern", owner:"FOWIC", name:"Bold Tern", cls:"Fred Olsen Windcarrier / NG-9000c",
   deckArea:4000, deckL:132, deckB:45, payload:9000, deckStrength:10,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:92.4, hullDepth:9, legReserve:9,
   craneType:"leg", cranePos:"aft-port", boomStow:"diag", legShape:"sq",
@@ -677,7 +740,7 @@ const DEFAULT_VESSELS = [
   cap1:1600, r1:31, cap2:640, r2:30,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"6,500t payload, 3,200m² deck, 1,600t crane, 157.5m hook, 92.4m legs. User-confirmed. Target sets: 0/4/6/8." },
-{ id:"bravetern", name:"Brave Tern", cls:"Fred Olsen Windcarrier / NG-9000c",
+{ id:"bravetern", owner:"FOWIC", name:"Brave Tern", cls:"Fred Olsen Windcarrier / NG-9000c",
   deckArea:3600, deckL:132, deckB:45, payload:9500, deckStrength:10,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:92.4, hullDepth:9, legReserve:9,
   craneType:"leg", cranePos:"aft-port", boomStow:"diag", legShape:"sq",
@@ -686,8 +749,8 @@ const DEFAULT_VESSELS = [
   cap1:1600, r1:24, cap2:720, r2:30,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"9,500t payload, 3,200m² deck, 1,800t crane, 157.5m hook, 92.4m legs. User-confirmed." },
-{ id:"fowic4", name:"FOWIC 4th vessel (planned)", cls:"Fred Olsen Windcarrier / newbuild",
-  deckArea:5000, deckL:162, deckB:58, payload:14000, deckStrength:18,
+{ id:"fowic4", owner:"FOWIC", name:"FOWIC 4th vessel (planned)", cls:"Fred Olsen Windcarrier / newbuild",
+  deckArea:5000, deckL:162, deckB:58, payload:12000, deckStrength:18,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12, legReserve:12,
   craneType:"leg", cranePos:"aft-port", boomStow:"diag", legShape:"tri",
   hookAboveDeck:180, boomLength:140, boomStowWidth:18, boomStowAngle:17,
@@ -696,17 +759,17 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"e",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
   source:"120m legs, 180m hook, 2,600t crane. User-confirmed. Deck area and payload estimated." },
 // ===== VAN OORD =====
-{ id:"boreas", name:"Boreas", cls:"Van Oord / Knud E. Hansen",
-  deckArea:7150, deckL:175, deckB:63, payload:16000, deckStrength:18,
+{ id:"boreas", owner:"Van Oord", name:"Boreas", cls:"Van Oord / Knud E. Hansen",
+  deckArea:7150, deckL:175, deckB:63, payload:14000, deckStrength:18,
   legWellsExcluded:1, legWellSide:19, nLegs:4, legLength:126, hullDepth:13.2, legReserve:13,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:180, boomLength:145, boomStowWidth:18, boomStowAngle:17,
   boomClearance:25, accomLength:28, craneBaseArea:280,
   cap1:3200, r1:40, cap2:1600, r2:80,
   conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",payload:"e",hullDepth:"e",deckStrength:"e"},
-  source:"7,150m² deck, 3,200t crane, 180m hook, 126m legs. User-confirmed. Target sets: 5/7/9/13." },
-{ id:"aeolus", name:"Aeolus", cls:"Van Oord",
-  deckArea:3800, deckL:139, deckB:38, payload:12000, deckStrength:12,
+  source:"Van Oord leaflet 2022. Estimated gross payload: 16,000t. Operational cargo payload: 14,000t after typical deduction for fuel (~1,800t) and freshwater+stores (~400t). Published capability of 7×15MW uses real turbine weights lighter than the tool's scaling model." },
+{ id:"aeolus", owner:"Van Oord", name:"Aeolus", cls:"Van Oord",
+  deckArea:3800, deckL:139, deckB:38, payload:10500, deckStrength:12,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:85, hullDepth:10, legReserve:10,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:145, boomLength:110, boomStowWidth:10, boomStowAngle:14,
@@ -714,7 +777,7 @@ const DEFAULT_VESSELS = [
   cap1:1600, r1:32, cap2:800, r2:65,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"6,500t payload, 3,776m² deck, 1,600t crane, 145m hook, 81m legs. User-confirmed." },
-{ id:"innovation", name:"Innovation", cls:"Van Oord / A2SEA",
+{ id:"innovation", owner:"DEME", name:"Innovation", cls:"Van Oord / A2SEA",
   deckArea:3600, deckL:147, deckB:42, payload:8000, deckStrength:10,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:95, hullDepth:11, legReserve:10,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -723,7 +786,7 @@ const DEFAULT_VESSELS = [
   cap1:1500, r1:31.5, cap2:750, r2:60,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
   source:"8,000t payload, 3,400m² deck, 1,500t crane, 109m hook, 89m legs. User-confirmed." },
-{ id:"seainstaller", name:"Sea Installer", cls:"Van Oord / A2SEA",
+{ id:"seainstaller", owner:"DEME", name:"Sea Installer", cls:"Van Oord / A2SEA",
   deckArea:3350, deckL:132, deckB:39, payload:5000, deckStrength:15,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:83, hullDepth:9, legReserve:9,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
@@ -732,7 +795,7 @@ const DEFAULT_VESSELS = [
   cap1:900, r1:24, cap2:800, r2:60,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"7,400t payload, 3,350m² deck, 1,600t crane, 157m hook, 82.5m legs. User-confirmed." },
-{ id:"seachallenger", name:"Sea Challenger", cls:"Van Oord / A2SEA",
+{ id:"seachallenger", owner:"DEME", name:"Sea Challenger", cls:"Van Oord / A2SEA",
   deckArea:3350, deckL:133, deckB:39, payload:5000, deckStrength:15,
   legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:83, hullDepth:9, legReserve:9,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
@@ -741,7 +804,7 @@ const DEFAULT_VESSELS = [
   cap1:900, r1:24, cap2:800, r2:55,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"7,400t payload, 3,350m² deck, 1,600t crane, 157m hook, 82.5m legs. User-confirmed." },
-{ id:"mpiresolution", name:"MPI Resolution", cls:"Van Oord / MPI Offshore",
+{ id:"mpiresolution", owner:"Van Oord", name:"MPI Resolution", cls:"Van Oord / MPI Offshore",
   deckArea:3200, deckL:120, deckB:40, payload:7650, deckStrength:8,
   legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:70.82, hullDepth:8, legReserve:9,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -750,7 +813,7 @@ const DEFAULT_VESSELS = [
   cap1:600, r1:22, cap2:300, r2:45,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"7,650t payload, 3,200m² deck, 600t crane, 92m hook, 70.82m legs. User-confirmed." },
-{ id:"mpiadventure", name:"MPI Adventure", cls:"Van Oord / MPI Offshore",
+{ id:"mpiadventure", owner:"Van Oord", name:"MPI Adventure", cls:"Van Oord / MPI Offshore",
   deckArea:3500, deckL:120, deckB:40, payload:8000, deckStrength:8,
   legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:70.82, hullDepth:8, legReserve:9,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -760,16 +823,16 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"8,000t payload, 3,500m² deck, 1,000t crane, 105m hook, 70.82m legs. User-confirmed." },
 // ===== JAN DE NUL =====
-{ id:"voltaire", name:"Voltaire", cls:"Jan De Nul / Knud E. Hansen",
-  deckArea:7000, deckL:169, deckB:60, payload:14000, deckStrength:20,
+{ id:"voltaire", owner:"Jan De Nul", name:"Voltaire", cls:"Jan De Nul / Knud E. Hansen",
+  deckArea:7000, deckL:169, deckB:60, payload:12000, deckStrength:20,
   legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:130, hullDepth:14.6, legReserve:13,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:162.5, boomLength:140, boomStowWidth:18, boomStowAngle:17,
   boomClearance:25, accomLength:30, craneBaseArea:280,
   cap1:3000, r1:40, cap2:1600, r2:80,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
-  source:"14,000t payload, 7,000m² deck, 3,200t crane, 162.5m hook, 130m legs. User-confirmed. Target sets: 4/6/9/13." },
-{ id:"voleouvent", name:"Vole au Vent", cls:"Jan De Nul, ex-A2SEA",
+  source:"Knud E. Hansen designer: 14,000t jacking DWT. Operational cargo payload: 12,000t after deducting fuel (~1,600t) and freshwater+stores (~400t). Published 6×15MW per user data." },
+{ id:"voleouvent", owner:"Jan De Nul", name:"Vole au Vent", cls:"Jan De Nul, ex-A2SEA",
   deckArea:3535, deckL:140, deckB:38, payload:6500, deckStrength:15,
   legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:90, hullDepth:10, legReserve:10,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
@@ -779,8 +842,8 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"6,500t payload, 3,535m² deck, 1,500t crane, 120m hook, 90m legs. User-confirmed." },
 // ===== DOMINION ENERGY =====
-{ id:"charybdis", name:"Charybdis", cls:"Dominion Energy / GustoMSC, Jones Act",
-  deckArea:5400, deckL:144, deckB:56, payload:11500, deckStrength:15,
+{ id:"charybdis", owner:"Dominion Energy", name:"Charybdis", cls:"Dominion Energy / GustoMSC, Jones Act",
+  deckArea:5400, deckL:144, deckB:56, payload:10000, deckStrength:15,
   legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:109, hullDepth:11.6, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:170, boomLength:130, boomStowWidth:18, boomStowAngle:17,
@@ -789,7 +852,7 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
   source:"11,500t payload, 5,400m² deck, 2,200t crane, 170m hook, 109m legs. User-confirmed. Target sets: 3/5/8/10." },
 // ===== SHIMIZU =====
-{ id:"bluewind", name:"Blue Wind", cls:"Shimizu / JMU / NOV GustoMSC NG-20000X",
+{ id:"bluewind", owner:"FOWIC", name:"Blue Wind", cls:"Shimizu / JMU / NOV GustoMSC NG-20000X",
   deckArea:4500, deckL:142, deckB:50, payload:2800, deckStrength:18,
   legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:109, hullDepth:12, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -799,26 +862,26 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
   source:"2,800t payload, 4,500m² deck, 2,500t crane, 158m hook, 109m legs. User-confirmed." },
 // ===== NORSE OFFSHORE =====
-{ id:"norseenergy", name:"Norse Energi", cls:"Norse Offshore WTIV",
-  deckArea:5100, deckL:155, deckB:52, payload:17000, deckStrength:15,
-  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:120, hullDepth:12, legReserve:12,
+{ id:"norseenergy", owner:"DEME", name:"Norse Energi", cls:"Norse Offshore WTIV",
+  deckArea:5600, deckL:151, deckB:58, payload:14000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:124, hullDepth:12, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:175, boomLength:140, boomStowWidth:18, boomStowAngle:17,
   boomClearance:24, accomLength:24, craneBaseArea:265,
-  cap1:3250, r1:38, cap2:1625, r2:76,
+  cap1:3200, r1:40, cap2:1625, r2:76,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
-  source:"17,000t payload, 5,100m² deck, 3,250t crane, 175m hook, 120m legs. User-confirmed. Target sets: 4/6/8/12." },
-{ id:"norsewind", name:"Norse Wind", cls:"Norse Offshore WTIV",
-  deckArea:5100, deckL:155, deckB:52, payload:17000, deckStrength:15,
-  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:120, hullDepth:12, legReserve:12,
+  source:"LOA 151.1m, beam 58m, 5,600m² deck, ~16,100t payload, 3,200t crane, 124m legs, 70m WD. Typical load: 6×15MW / 5×18MW / 4×20MW. DEME fleet (built for Havfram, acquired by DEME Apr 2025). Confirmed: Baird Maritime Oct/Jan 2026, DEME press release May 2026." },
+{ id:"norsewind", owner:"DEME", name:"Norse Wind", cls:"Norse Offshore WTIV",
+  deckArea:5600, deckL:151, deckB:58, payload:14000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:124, hullDepth:12, legReserve:12,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
   hookAboveDeck:175, boomLength:140, boomStowWidth:18, boomStowAngle:17,
   boomClearance:24, accomLength:24, craneBaseArea:265,
-  cap1:3250, r1:38, cap2:1625, r2:76,
+  cap1:3200, r1:40, cap2:1625, r2:76,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
-  source:"Sister to Norse Energi. Same confirmed data." },
+  source:"LOA 151.1m, beam 58m, 5,600m² deck, ~16,100t payload, 3,200t crane, 124m legs, 70m WD. Typical load: 6×15MW / 5×18MW / 4×20MW. DEME fleet (built for Havfram, acquired by DEME Apr 2025). Confirmed: Baird Maritime Oct/Jan 2026, DEME press release May 2026." },
 // ===== CDWE / DEME =====
-{ id:"greenjade", name:"Green Jade", cls:"CDWE (CSBC + DEME JV), DP3 HLV",
+{ id:"greenjade", owner:"CDWE", name:"Green Jade", cls:"CDWE (CSBC + DEME JV), DP3 HLV",
   deckArea:8000, deckL:216, deckB:49, payload:30000, deckStrength:20,
   legWellsExcluded:1, legWellSide:0, nLegs:0, legLength:0, hullDepth:16, legReserve:0,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"tri",
@@ -828,7 +891,7 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"x",payload:"e",hullDepth:"e",deckStrength:"e"},
   source:"NOT A JACK-UP. 8,000m² deck, 4,000t crane, 125m hook. User-confirmed. No legs." },
 // ===== CHINESE / ASIAN VESSELS =====
-{ id:"apollo", name:"Apollo (Da Qiao Xiang Yang)", cls:"Chinese WTIV",
+{ id:"apollo", owner:"Chinese Fleet", name:"Apollo (Da Qiao Xiang Yang)", cls:"Chinese WTIV",
   deckArea:2000, deckL:90, deckB:36, payload:4500, deckStrength:10,
   legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:105.8, hullDepth:9, legReserve:9,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
@@ -837,7 +900,7 @@ const DEFAULT_VESSELS = [
   cap1:800, r1:26, cap2:400, r2:50,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"4,500t payload, 2,000m² deck, 800t crane, 110m hook, 105.8m legs. User-confirmed." },
-{ id:"kraken", name:"Kraken", cls:"Jack-up platform",
+{ id:"kraken", owner:"Chinese Fleet", name:"Kraken", cls:"Jack-up platform",
   deckArea:900, deckL:50, deckB:30, payload:8800, deckStrength:10,
   legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:84.8, hullDepth:6, legReserve:7,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
@@ -846,7 +909,7 @@ const DEFAULT_VESSELS = [
   cap1:300, r1:18, cap2:150, r2:35,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"8,800t payload, 900m² deck, 300t crane, 82.5m hook, 84.8m legs. User-confirmed." },
-{ id:"leviathan", name:"Leviathan", cls:"Jack-up platform",
+{ id:"leviathan", owner:"Chinese Fleet", name:"Leviathan", cls:"Jack-up platform",
   deckArea:900, deckL:50, deckB:30, payload:8800, deckStrength:10,
   legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:84.8, hullDepth:6, legReserve:7,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
@@ -855,7 +918,7 @@ const DEFAULT_VESSELS = [
   cap1:400, r1:18, cap2:200, r2:35,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"8,800t payload, 900m² deck, 400t crane, 75m hook, 84.8m legs. User-confirmed." },
-{ id:"hydra", name:"Hydra", cls:"Jack-up platform",
+{ id:"hydra", owner:"Chinese Fleet", name:"Hydra", cls:"Jack-up platform",
   deckArea:900, deckL:50, deckB:30, payload:4000, deckStrength:10,
   legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:84.8, hullDepth:6, legReserve:7,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
@@ -864,7 +927,7 @@ const DEFAULT_VESSELS = [
   cap1:400, r1:18, cap2:200, r2:35,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"900m² deck, 400t crane, 71m hook, 84.8m legs. User-confirmed." },
-{ id:"hyundaifrontier", name:"Hyundai Frontier", cls:"Hyundai / Korean WTIV",
+{ id:"hyundaifrontier", owner:"Hyundai", name:"Hyundai Frontier", cls:"Hyundai / Korean WTIV",
   deckArea:4000, deckL:130, deckB:45, payload:13000, deckStrength:15,
   legWellsExcluded:1, legWellSide:15, nLegs:4, legLength:83.5, hullDepth:10, legReserve:10,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -874,7 +937,7 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"e",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"13,000t payload, 1,200t crane, 145m hook, 83.5m legs. User-confirmed. Deck area estimated." },
 // ===== JAPAN DOMESTIC =====
-{ id:"jwindpioneer", name:"J/U Wind Pioneer", cls:"Japan domestic jack-up",
+{ id:"jwindpioneer", owner:"Shimizu", name:"J/U Wind Pioneer", cls:"Japan domestic jack-up",
   deckArea:530, deckL:35, deckB:22, payload:650, deckStrength:8,
   legWellsExcluded:1, legWellSide:6, nLegs:4, legLength:54, hullDepth:5, legReserve:5,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -883,7 +946,7 @@ const DEFAULT_VESSELS = [
   cap1:232, r1:15, cap2:116, r2:30,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"650t payload, 530m² deck, 232t crane, 70m hook, 54m legs. User-confirmed." },
-{ id:"jwind", name:"J/U Wind", cls:"Japan domestic jack-up",
+{ id:"jwind", owner:"Shimizu", name:"J/U Wind", cls:"Japan domestic jack-up",
   deckArea:430, deckL:32, deckB:20, payload:220, deckStrength:6,
   legWellsExcluded:1, legWellSide:5, nLegs:4, legLength:55, hullDepth:4, legReserve:4,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -892,7 +955,7 @@ const DEFAULT_VESSELS = [
   cap1:150, r1:12, cap2:75, r2:24,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"220t payload, 430m² deck, 150t crane, 87m hook, 55m legs. User-confirmed." },
-{ id:"jwindserver", name:"J/U Wind Server", cls:"Japan domestic jack-up",
+{ id:"jwindserver", owner:"Shimizu", name:"J/U Wind Server", cls:"Japan domestic jack-up",
   deckArea:1000, deckL:50, deckB:28, payload:1500, deckStrength:8,
   legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:65, hullDepth:6, legReserve:6,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -902,7 +965,7 @@ const DEFAULT_VESSELS = [
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"1,500t payload, 1,000m² deck, 400t crane, 80m hook, 65m legs. User-confirmed." },
 // ===== OTHER / NEWBUILDS =====
-{ id:"neptune", name:"Neptune", cls:"Jack-up platform",
+{ id:"neptune", owner:"DEME", name:"Neptune", cls:"Jack-up platform",
   deckArea:1800, deckL:75, deckB:32, payload:1800, deckStrength:8,
   legWellsExcluded:1, legWellSide:10, nLegs:4, legLength:92, hullDepth:7, legReserve:8,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
@@ -911,7 +974,7 @@ const DEFAULT_VESSELS = [
   cap1:600, r1:20, cap2:300, r2:40,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"1,800t payload, 1,800m² deck, 600t crane, 94m hook, 92m legs. User-confirmed." },
-{ id:"cp16001", name:"CP-16001", cls:"Chinese design",
+{ id:"cp16001", owner:"Chinese Fleet", name:"CP-16001", cls:"Chinese design",
   deckArea:3800, deckL:120, deckB:42, payload:8000, deckStrength:12,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:75, hullDepth:9, legReserve:9,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -920,7 +983,7 @@ const DEFAULT_VESSELS = [
   cap1:1800, r1:30, cap2:900, r2:60,
   conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
   source:"3,800m² deck, 1,800t crane, 130m hook, 75m legs. User-confirmed." },
-{ id:"oceanwindwtiv", name:"Ocean Wind Power WTIV", cls:"Newbuild WTIV",
+{ id:"oceanwindwtiv", owner:"Ocean Wind Power", name:"Ocean Wind Power WTIV", cls:"Newbuild WTIV",
   deckArea:5000, deckL:150, deckB:52, payload:11500, deckStrength:15,
   legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:109, hullDepth:11, legReserve:11,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -929,7 +992,7 @@ const DEFAULT_VESSELS = [
   cap1:2600, r1:38, cap2:1300, r2:75,
   conf:{deckArea:"e",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"11,500t payload, 2,600t crane, 170m hook, 109m legs. User-confirmed. Deck area estimated." },
-{ id:"seawayventus", name:"Seaway Ventus", cls:"Subsea 7 / OHT jack-up",
+{ id:"seawayventus", owner:"Seaway 7", name:"Seaway Ventus", cls:"Subsea 7 / OHT jack-up",
   deckArea:4600, deckL:142, deckB:50, payload:10931, deckStrength:10,
   legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:109, hullDepth:11, legReserve:10,
   craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
@@ -938,7 +1001,7 @@ const DEFAULT_VESSELS = [
   cap1:2500, r1:30, cap2:900, r2:65,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"10,500t payload, 4,500m² deck, 1,800t crane, 155.4m hook, 104.5m legs. User-confirmed. Target sets: 0/4/6/8." },
-{ id:"gmsendurance", name:"GMS Endurance", cls:"Gulf Marine Services (O&M SEU)",
+{ id:"gmsendurance", owner:"GMS", name:"GMS Endurance", cls:"Gulf Marine Services (O&M SEU)",
   deckArea:1035, deckL:55, deckB:27, payload:1800, deckStrength:8,
   legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:94.2, hullDepth:5, legReserve:6,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
@@ -947,7 +1010,7 @@ const DEFAULT_VESSELS = [
   cap1:300, r1:18, cap2:150, r2:35,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"1,800t payload, 1,035m² deck, 300t crane, 75m hook, 94.2m legs. User-confirmed." },
-{ id:"gmsenterprise", name:"GMS Enterprise", cls:"Gulf Marine Services (O&M SEU)",
+{ id:"gmsenterprise", owner:"GMS", name:"GMS Enterprise", cls:"Gulf Marine Services (O&M SEU)",
   deckArea:1035, deckL:55, deckB:27, payload:1800, deckStrength:8,
   legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:104, hullDepth:5, legReserve:6,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
@@ -956,7 +1019,7 @@ const DEFAULT_VESSELS = [
   cap1:400, r1:18, cap2:200, r2:35,
   conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
   source:"1,035m² deck, 400t crane, 75m hook, 104m legs. User-confirmed." },
-{ id:"gmsevolution", name:"GMS Evolution", cls:"Gulf Marine Services (O&M SEU)",
+{ id:"gmsevolution", owner:"GMS", name:"GMS Evolution", cls:"Gulf Marine Services (O&M SEU)",
   deckArea:800, deckL:45, deckB:24, payload:3200, deckStrength:7,
   legWellsExcluded:1, legWellSide:7, nLegs:4, legLength:104, hullDepth:4.5, legReserve:5,
   craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
@@ -969,55 +1032,55 @@ const DEFAULT_VESSELS = [
 
 
 const DEFAULT_TURBINES = [
-{ id:"t20", name:"20 MW  |  300 m rotor  |  band 15-20 MW",
+{ id:"t20", owner:"Other", name:"20 MW  |  300 m rotor  |  band 15-20 MW",
   mw:20, rotor:300, hubHeight:165,
   nacelleW:1250, nacelleArea:399, nacelleStowH:14,
   towerW:1400, towerArea:254, towerStowH:108, towerStacks:1,
   bladeW:75, bladeLength:145, rackArea:1091,
   toolArea:623, conf:"e" },
-{ id:"t18", name:"18 MW  |  280 m rotor  |  band 15-20 MW",
+{ id:"t18", owner:"Other", name:"18 MW  |  280 m rotor  |  band 15-20 MW",
   mw:18, rotor:280, hubHeight:158,
   nacelleW:1125, nacelleArea:347, nacelleStowH:13,
   towerW:1300, towerArea:222, towerStowH:102, towerStacks:1,
   bladeW:68, bladeLength:135, rackArea:984,
   toolArea:543, conf:"e" },
-{ id:"t15", name:"15 MW  |  236 m rotor  |  band 15-20 MW",
+{ id:"t15", owner:"Other", name:"15 MW  |  236 m rotor  |  band 15-20 MW",
   mw:15, rotor:236, hubHeight:145,
   nacelleW:865, nacelleArea:247, nacelleStowH:12,
   towerW:1100, towerArea:157, towerStowH:90, towerStacks:1,
   bladeW:55, bladeLength:115, rackArea:761,
   toolArea:386, conf:"e" },
-{ id:"t14", name:"14 MW  |  222 m rotor  |  band 12-15 MW",
+{ id:"t14", owner:"Other", name:"14 MW  |  222 m rotor  |  band 12-15 MW",
   mw:14, rotor:222, hubHeight:140,
   nacelleW:820, nacelleArea:218, nacelleStowH:12,
   towerW:1000, towerArea:139, towerStowH:87, towerStacks:1,
   bladeW:52, bladeLength:108, rackArea:695,
   toolArea:341, conf:"e" },
-{ id:"t11", name:"11 MW  |  200 m rotor  |  band 6-11 MW",
+{ id:"t11", owner:"Other", name:"11 MW  |  200 m rotor  |  band 6-11 MW",
   mw:11, rotor:200, hubHeight:125,
   nacelleW:760, nacelleArea:177, nacelleStowH:11,
   towerW:850, towerArea:113, towerStowH:78, towerStacks:1,
   bladeW:47, bladeLength:97, rackArea:594,
   toolArea:277, conf:"e" },
-{ id:"t10", name:"10 MW  |  190 m rotor  |  band 6-11 MW",
+{ id:"t10", owner:"Other", name:"10 MW  |  190 m rotor  |  band 6-11 MW",
   mw:10, rotor:190, hubHeight:118,
   nacelleW:685, nacelleArea:160, nacelleStowH:11,
   towerW:780, towerArea:102, towerStowH:73, towerStacks:1,
   bladeW:42, bladeLength:93, rackArea:550,
   toolArea:250, conf:"a" },
-{ id:"t8", name:"8 MW  |  167 m rotor  |  band 6-11 MW",
+{ id:"t8", owner:"Other", name:"8 MW  |  167 m rotor  |  band 6-11 MW",
   mw:8, rotor:167, hubHeight:110,
   nacelleW:510, nacelleArea:124, nacelleStowH:10,
   towerW:600, towerArea:79, towerStowH:68, towerStacks:1,
   bladeW:35, bladeLength:81, rackArea:453,
   toolArea:193, conf:"e" },
-{ id:"t6", name:"6 MW  |  154 m rotor  |  band 6-11 MW",
+{ id:"t6", owner:"Other", name:"6 MW  |  154 m rotor  |  band 6-11 MW",
   mw:6, rotor:154, hubHeight:102,
   nacelleW:450, nacelleArea:105, nacelleStowH:10,
   towerW:500, towerArea:67, towerStowH:63, towerStacks:1,
   bladeW:27, bladeLength:75, rackArea:401,
   toolArea:164, conf:"e" },
-{ id:"t5", name:"5 MW  |  130 m rotor  |  band 4-6 MW",
+{ id:"t5", owner:"Other", name:"5 MW  |  130 m rotor  |  band 4-6 MW",
   mw:5, rotor:130, hubHeight:90,
   nacelleW:375, nacelleArea:75, nacelleStowH:9,
   towerW:400, towerArea:48, towerStowH:56, towerStacks:1,
@@ -1387,12 +1450,24 @@ function compute(v, t, o){
   const weightPerSet = t.nacelleW + t.towerW + 3*t.bladeW;
   R.weightPerSet = weightPerSet;
 
-  const byPayload=Math.max(0,Math.floor(v.payload/weightPerSet));
+  // Total cargo weight = N × WTG set weight + fixed overhead
+  // Overhead items that are carried on every trip regardless of turbine count:
+  //   • Lifting tools (one set): toolNacelle + toolTower + toolBlade
+  //   • Containers (12 × 25 t): 300 t — project containers for WTG projects
+  //   • Seafastening / grillage hardware: 200 t flat allowance
+  const liftingToolsW = o.toolNacelle + o.toolTower + o.toolBlade;
+  const containerW    = 300;   // 12 × 25 t
+  const seafastenW    = 200;   // grillage and seafastening hardware allowance
+  const overheadW     = liftingToolsW + containerW + seafastenW;
+  const availableForWTG = Math.max(0, v.payload - overheadW);
+  const byPayload = Math.max(0, Math.floor(availableForWTG / weightPerSet));
+  R.overheadW = overheadW;
+
   // rackSets==0 means auto (no separate cap); geometry and payload are the binding constraints
   const byRack = o.rackSets > 0 ? Math.max(0,Math.floor(o.rackSets)) : 999;
   R.limits = [
     { nm:"Deck arrangement", val:G.maxSets, det:G.maxSets+" complete sets place without clashing, "+G.nacUnderBoom+" nacelles under the boom" },
-    { nm:"Payload",      val:byPayload,      det:n0(v.payload)+" t / "+n0(weightPerSet)+" t per set" },
+    { nm:"Payload",      val:byPayload,      det:"Cargo payload "+n0(v.payload)+" t (fuel/stores excluded) — overhead "+n0(overheadW)+" t — "+n0(weightPerSet)+" t per WTG set" },
     { nm:"Blade rack",   val:byRack,         det:o.rackSets>0 ? n0(o.rackSets)+" sets (user cap)" : "no cap — limited by geometry and payload" }
   ];
   const carry=Math.min(G.maxSets,byPayload,byRack);
@@ -1438,6 +1513,9 @@ function renderResults(){
     why = `<b>${R.binding.nm} is the binding constraint.</b> All three installation gates pass, with ${n1(R.hook.margin)} m of hook margin and ${n0(R.crane.margin)} t of crane margin at ${n0(R.radius)} m radius.` + (R.area.nacFits ? '' : ` Nacelles will not fit under the ${n1(v.boomClearance)} m boom clearance, so the shadow is dead space.`) + (R.area.boomTooLong ? ` The ${n0(v.boomLength)} m boom will not stow longitudinally on a ${n0(v.deckL)} m deck.` : '');
   }
   document.getElementById('verdictText').innerHTML = why;
+  // Update strip
+  const bc=document.getElementById('bindChip');
+  if(bc) bc.textContent = R.sets>0 ? (R.binding?R.binding.nm:'—') : 'Gate failed';
 
   // gates
   const g=[];
@@ -1501,6 +1579,12 @@ function drawDeck(v,t,R){
   const sc=Math.min((W-2*padX)/totalL,(H-2*padY-14)/G.B);
   const x0=(W-totalL*sc)/2, y0=(H-G.B*sc)/2+2;
   const X=m=>x0+m*sc, Y=m=>y0+m*sc, px=m=>m*sc;
+  // Store exact transform params for the drag system
+  // X(model_x) = x0 + model_x * sc  →  model_x = (svgX - x0) / sc
+  // Y(model_y) = y0 + model_y * sc  →  model_y = (svgY - y0) / sc
+  // Y is NOT inverted: port (model_y=0) is at the TOP of the SVG
+  {const el=document.getElementById('deckPlan');
+   if(el){el.dataset.sc=sc.toFixed(6);el.dataset.x0=x0.toFixed(4);el.dataset.y0=y0.toFixed(4);}}
   const MF='font-family="ui-monospace, Menlo, Consolas, monospace"';
   const B=G.B, L=G.L;
   let o=[`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`];
@@ -1544,8 +1628,9 @@ function drawDeck(v,t,R){
    </g>`);
 
   // nacelles under the boom
-  G.nac.slice(0,R.sets).forEach(N=>{
-    o.push(`<g transform="translate(${X(N.mx)},${Y(N.my)}) rotate(0)">
+  G.nac.slice(0,R.sets).forEach((N,ni)=>{
+    o.push(`<g class="draggable" data-comp="nac" data-idx="${ni}" data-mx="${N.mx.toFixed(2)}" data-my="${N.my.toFixed(2)}" style="cursor:grab" transform="translate(${X(N.mx)},${Y(N.my)})">
+      <title>Nacelle ${ni+1} — drag to reposition</title>
       <rect x="${-px(G.nacSide)*0.5}" y="${-px(G.nacSide)*0.33}" width="${px(G.nacSide)}" height="${px(G.nacSide)*0.66}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1"/>
       <rect x="${-px(G.nacSide)*0.5}" y="${-px(G.nacSide)*0.33}" width="${px(G.nacSide)*0.24}" height="${px(G.nacSide)*0.66}" fill="#D3DDE1" stroke="#0B1F2A" stroke-width=".7"/>
       </g>`);
@@ -1585,11 +1670,16 @@ function drawDeck(v,t,R){
       o.push(`<line x1="${X(hx)}" y1="${hy}" x2="${X(hx)}" y2="${hy+hDir*px(3.5)}" stroke="#0B4F6C" stroke-width="2"/>`);
     }
   }
-  // Draw each tower
-  towArr.forEach(P=>{
-    o.push(`<rect x="${X(P.mx-hh)}" y="${Y(P.my-hh)}" width="${px(G.towSide)}" height="${px(G.towSide)}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1"/>`);
-    o.push(`<circle cx="${X(P.mx)}" cy="${Y(P.my)}" r="${px(G.towSide*0.44)}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1.1"/>`);
-    o.push(`<circle cx="${X(P.mx)}" cy="${Y(P.my)}" r="${px(G.towSide*0.29)}" fill="none" stroke="#B4C2C8" stroke-width=".9"/>`);
+  // Draw each tower — uses transform=translate so drag only needs to update the transform
+  towArr.forEach((P,ti)=>{
+    const ths=px(G.towSide);
+    o.push(`<g class="draggable" data-comp="tow" data-idx="${ti}" data-mx="${P.mx.toFixed(2)}" data-my="${P.my.toFixed(2)}"
+      transform="translate(${X(P.mx)},${Y(P.my)})" style="cursor:grab">
+      <rect x="${-ths/2}" y="${-ths/2}" width="${ths}" height="${ths}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1"/>
+      <circle cx="0" cy="0" r="${ths*0.44}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1.1"/>
+      <circle cx="0" cy="0" r="${ths*0.29}" fill="none" stroke="#B4C2C8" stroke-width=".9"/>
+      <title>Tower ${ti+1} — drag to reposition</title>
+    </g>`);
   });
 
   // lifting tools
@@ -1632,7 +1722,38 @@ function drawDeck(v,t,R){
   o.push(`<text x="${W/2}" y="${H-5}" ${MF} font-size="8.5" fill="#7D8B93" text-anchor="middle">${cap}</text>`);
   if(!G.nacFits && R.sets===0)
     o.push(`<text x="${W/2}" y="${H-16}" ${MF} font-size="8.5" fill="#A32C1E" text-anchor="middle">nacelle is taller than the ${n1(v.boomClearance)} m clearance under the boom</text>`);
+  // ── Crane working-radius arcs ─────────────────────────────
+  if(R.sets>=0){
+    const cx=X(G.cl.mx), cy=Y(G.cl.my);
+    const r1px=px(v.r1||30), r2px=px(v.r2||60);
+    // Clip arcs to the SVG viewbox (only draw where they cross the deck area)
+    // R1 arc: max rated capacity arc — blue dashed
+    o.push(`<circle cx="${cx}" cy="${cy}" r="${r1px}"
+      fill="none" stroke="#2196F3" stroke-width="1.6" stroke-dasharray="6 4"
+      opacity="0.75" pointer-events="none">`);
+    o.push(`<title>Crane R1: ${v.cap1 || '?'}t at ${v.r1 || '?'}m radius</title></circle>`);
+    // R1 label
+    o.push(`<text x="${cx+r1px+3}" y="${cy}" fill="#2196F3" font-size="9"
+      font-family="monospace" alignment-baseline="middle" pointer-events="none">
+      R1 ${v.r1||'?'}m/${v.cap1||'?'}t</text>`);
+    // R2 arc: secondary capacity arc — orange dashed
+    o.push(`<circle cx="${cx}" cy="${cy}" r="${r2px}"
+      fill="none" stroke="#FF9800" stroke-width="1.4" stroke-dasharray="4 4"
+      opacity="0.65" pointer-events="none">`);
+    o.push(`<title>Crane R2: ${v.cap2 || '?'}t at ${v.r2 || '?'}m radius</title></circle>`);
+    o.push(`<text x="${cx+r2px+3}" y="${cy}" fill="#FF9800" font-size="9"
+      font-family="monospace" alignment-baseline="middle" pointer-events="none">
+      R2 ${v.r2||'?'}m/${v.cap2||'?'}t</text>`);
+  }
+  // ── Update crane legend ────────────────────────────────────────────────────
+  const cl=document.getElementById('craneLegend');
+  if(cl && R.sets>=0){
+    cl.innerHTML=`<span><i style="display:inline-block;width:24px;height:0;border-top:2px dashed #2196F3"></i>R1: <b>${v.cap1||'?'}t</b> @ ${v.r1||'?'}m</span>
+    <span><i style="display:inline-block;width:24px;height:0;border-top:2px dashed #FF9800"></i>R2: <b>${v.cap2||'?'}t</b> @ ${v.r2||'?'}m</span>`;
+  }
   document.getElementById('deckPlan').innerHTML=o.join('');
+  // After setting innerHTML, attach drag behaviour
+  initDrag(document.getElementById('deckPlan'), G, R.sets);
 }
 
 /* ============================================================
@@ -1819,7 +1940,24 @@ function fillOpsFields(){
 
 function bind(){
   const vs=document.getElementById('vesselSel');
-  vs.innerHTML = VESSELS.map((v,i)=>`<option value="${i}">${v.name} — ${v.cls}</option>`).join('');
+  {
+    const ownerGroups={};
+    VESSELS.forEach((v,i)=>{ const o=v.owner||'Other'; if(!ownerGroups[o]) ownerGroups[o]=[]; ownerGroups[o].push({v,i}); });
+    const ownerOrder=['Cadeler','Van Oord','Jan De Nul','FOWIC','Seaway 7','Dominion Energy','Norse Offshore','ZITON','Hyundai','Shimizu','CDWE','GMS','Chinese Fleet','Independent','Other'];
+    let vsHtml='';
+    const seen=new Set();
+    ownerOrder.forEach(owner=>{ if(!ownerGroups[owner]) return; seen.add(owner);
+      vsHtml+=`<optgroup label="${owner}">`;
+      ownerGroups[owner].forEach(({v,i})=>{ vsHtml+=`<option value="${i}">${v.name}</option>`; });
+      vsHtml+='</optgroup>';
+    });
+    Object.keys(ownerGroups).filter(o=>!seen.has(o)).forEach(owner=>{
+      vsHtml+=`<optgroup label="${owner}">`;
+      ownerGroups[owner].forEach(({v,i})=>{ vsHtml+=`<option value="${i}">${v.name}</option>`; });
+      vsHtml+='</optgroup>';
+    });
+    vs.innerHTML=vsHtml;
+  }
   vs.value=curV;
   vs.onchange = e => { curV=+e.target.value; fillVesselFields(); refresh(); };
 
@@ -1904,7 +2042,190 @@ function refresh(){
 
 document.getElementById('stamp').textContent = 'rev ' + new Date().toISOString().slice(0,10);
 
+// ===== DRAGGABLE DECK COMPONENTS — corrected implementation =====
+//
+// Coordinate system (matches drawDeck exactly):
+//   X(model_x) = x0 + model_x * sc
+//   Y(model_y) = y0 + model_y * sc   ← NOT inverted; port side is SVG top
+//
+// To go from SVG coords back to model coords:
+//   model_x = (svgX - x0) / sc
+//   model_y = (svgY - y0) / sc
+//
+// All draggable components use transform="translate(svgX, svgY)" on a <g>
+// with their geometry drawn relative to (0,0). Dragging only changes the
+// transform — no coordinate recalculation of child elements needed.
+
+const DS = {                        // drag state singleton
+  active: false, svg: null,
+  el: null, comp: null, idx: -1,
+  startSVGx: 0, startSVGy: 0,      // SVG coords at pointer down
+  origTx: 0, origTy: 0,             // original translate at pointer down
+  sc: 1, x0: 0, y0: 0,             // coordinate params from dataset
+  G: null,                          // deckZones result from last render
+  overrides: {}                     // {tow:[{mx,my}], nac:[{mx,my}]} — user moves
+};
+
+function clientToSVG(svg, clientX, clientY){
+  const pt = svg.createSVGPoint();
+  pt.x = clientX; pt.y = clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+function svgToModel(svgX, svgY){
+  return { mx: (svgX - DS.x0) / DS.sc, my: (svgY - DS.y0) / DS.sc };
+}
+
+function modelToSVG(mx, my){
+  return { x: DS.x0 + mx * DS.sc, y: DS.y0 + my * DS.sc };
+}
+
+function getTranslate(el){
+  const tr = el.getAttribute('transform') || 'translate(0,0)';
+  const m = tr.match(/translate\(\s*([\d.eE+-]+)\s*,\s*([\d.eE+-]+)\s*\)/);
+  return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : { x: 0, y: 0 };
+}
+
+function snapM(v, grid){ return Math.round(v / grid) * grid; }
+
+function initDrag(svg, G, nSets){
+  if(!svg || !G) return;
+  DS.svg = svg;
+  DS.G   = G;
+  DS.sc  = parseFloat(svg.dataset.sc  || '4');
+  DS.x0  = parseFloat(svg.dataset.x0  || '0');
+  DS.y0  = parseFloat(svg.dataset.y0  || '0');
+
+  svg.querySelectorAll('.draggable').forEach(el => {
+    el.onmousedown  = e => startDrag(e, el);
+    el.ontouchstart = e => { if(e.touches.length===1) startDrag(e.touches[0], el, e); };
+  });
+
+  svg.onmousemove  = moveDrag;
+  svg.onmouseup    = endDrag;
+  svg.onmouseleave = endDrag;
+  svg.ontouchmove  = e => { if(DS.active&&e.touches.length===1){ e.preventDefault(); moveDrag(e.touches[0]); }};
+  svg.ontouchend   = endDrag;
+}
+
+function startDrag(e, el, origEvent){
+  if(origEvent) origEvent.preventDefault();
+  e.stopPropagation && e.stopPropagation();
+  const pt = clientToSVG(DS.svg, e.clientX, e.clientY);
+  const tr = getTranslate(el);
+  DS.active = true;
+  DS.el     = el;
+  DS.comp   = el.dataset.comp;
+  DS.idx    = parseInt(el.dataset.idx);
+  DS.startSVGx = pt.x;
+  DS.startSVGy = pt.y;
+  DS.origTx    = tr.x;
+  DS.origTy    = tr.y;
+  // Visual feedback: highlight selected component
+  el.querySelector('rect').setAttribute('stroke', '#00BCD4');
+  el.querySelector('rect').setAttribute('stroke-width', '2.5');
+  el.style.filter = 'drop-shadow(0 1px 5px rgba(0,150,200,0.55))';
+  el.style.cursor = 'grabbing';
+}
+
+function moveDrag(e){
+  if(!DS.active || !DS.el) return;
+  const G    = DS.G;
+  const GRID = 0.5;   // snap to 0.5 m grid in model space
+  const SNAP_PX = DS.sc * 0.5;  // snap threshold in SVG pixels (~0.5 m)
+
+  const pt = clientToSVG(DS.svg, e.clientX, e.clientY);
+  const dx = pt.x - DS.startSVGx;
+  const dy = pt.y - DS.startSVGy;
+
+  // New translate in SVG space
+  let tx = DS.origTx + dx;
+  let ty = DS.origTy + dy;
+
+  // Convert to model space, snap, clamp
+  let {mx, my} = svgToModel(tx, ty);
+  mx = snapM(mx, GRID);
+  my = snapM(my, GRID);
+
+  // Clamp to cargo deck bounds
+  const half = (DS.comp==='tow' ? G.towSide : G.nacSide) / 2;
+  mx = Math.max(G.cargoAft + half, Math.min(G.cargoEnd - half, mx));
+  my = Math.max(half,              Math.min(G.B - half,        my));
+
+  // Snap-to-align with siblings (within 0.6 m in model space)
+  const ALIGN_M = 0.6;
+  DS.svg.querySelectorAll(`.draggable[data-comp="${DS.comp}"]`).forEach(sib => {
+    if(sib === DS.el) return;
+    const sibTr = getTranslate(sib);
+    const {mx: smx, my: smy} = svgToModel(sibTr.x, sibTr.y);
+    if(Math.abs(mx - smx) < ALIGN_M) mx = smx;
+    if(Math.abs(my - smy) < ALIGN_M) my = smy;
+  });
+
+  // Convert back to SVG for the transform
+  const s = modelToSVG(mx, my);
+  DS.el.setAttribute('transform', `translate(${s.x.toFixed(2)},${s.y.toFixed(2)})`);
+  DS.el.dataset.mx = mx.toFixed(2);
+  DS.el.dataset.my = my.toFixed(2);
+
+  // Alignment guide lines
+  updateGuides(mx, my);
+}
+
+function endDrag(){
+  if(!DS.active) return;
+  DS.active = false;
+  clearGuides();
+  if(!DS.el) return;
+  const el = DS.el;
+  // Restore normal appearance
+  const rect = el.querySelector('rect');
+  if(rect){ rect.setAttribute('stroke','#0B1F2A'); rect.setAttribute('stroke-width','1'); }
+  el.style.filter = '';
+  el.style.cursor = 'grab';
+  // Save override
+  const comp = DS.comp, idx = DS.idx;
+  const mx = parseFloat(el.dataset.mx), my = parseFloat(el.dataset.my);
+  if(!DS.overrides[comp]) DS.overrides[comp] = [];
+  DS.overrides[comp][idx] = {mx, my};
+  DS.el = null;
+}
+
+function updateGuides(mx, my){
+  clearGuides();
+  const W=620, H=356;
+  const sibs = DS.svg.querySelectorAll(`.draggable[data-comp="${DS.comp}"]`);
+  sibs.forEach(sib=>{
+    if(sib===DS.el) return;
+    const sibTr = getTranslate(sib);
+    const {mx:smx,my:smy} = svgToModel(sibTr.x,sibTr.y);
+    const svgC = modelToSVG(mx, my);
+    const svgS = modelToSVG(smx, smy);
+    if(Math.abs(svgC.x - svgS.x) < 3){
+      const ln = document.createElementNS('http://www.w3.org/2000/svg','line');
+      ln.setAttribute('x1', svgC.x); ln.setAttribute('y1', 0);
+      ln.setAttribute('x2', svgC.x); ln.setAttribute('y2', H);
+      ln.setAttribute('stroke','#00BCD4'); ln.setAttribute('stroke-width','0.9');
+      ln.setAttribute('stroke-dasharray','4 3'); ln.setAttribute('pointer-events','none');
+      ln.classList.add('snap-guide'); DS.svg.appendChild(ln);
+    }
+    if(Math.abs(svgC.y - svgS.y) < 3){
+      const ln = document.createElementNS('http://www.w3.org/2000/svg','line');
+      ln.setAttribute('x1', 0);  ln.setAttribute('y1', svgC.y);
+      ln.setAttribute('x2', W);  ln.setAttribute('y2', svgC.y);
+      ln.setAttribute('stroke','#00BCD4'); ln.setAttribute('stroke-width','0.9');
+      ln.setAttribute('stroke-dasharray','4 3'); ln.setAttribute('pointer-events','none');
+      ln.classList.add('snap-guide'); DS.svg.appendChild(ln);
+    }
+  });
+}
+
+function clearGuides(){
+  if(DS.svg) DS.svg.querySelectorAll('.snap-guide').forEach(g=>g.remove());
+}
+
 bind(); fillVesselFields(); fillTurbineFields(); fillOpsFields(); refresh();
+
 </script>
 </body>
 </html>
