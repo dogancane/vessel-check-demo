@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WTIV Set Capacity Calculator</title>
+<style>
+:root{
+  --hull:#0B1F2A;
+  --hull-2:#12303F;
+  --deck:#EEF1F0;
+  --deck-2:#FFFFFF;
+  --steel:#7D8B93;
+  --steel-lt:#C9D2D6;
+  --teal:#12667E;
+  --teal-lt:#3E93AB;
+  --pass:#1F7A4C;
+  --warn:#B57314;
+  --fail:#A32C1E;
+  --sea:#BFE0EA;
+  --seabed:#E6D9B8;
+  --line:#D3DBDE;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"DejaVu Sans Mono",Menlo,Consolas,monospace;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--deck);
+  color:var(--hull);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+header{
+  background:var(--hull);
+  color:#fff;
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+  flex-wrap:wrap;
+  border-bottom:3px solid var(--teal);
+}
+header h1{
+  font-size:15px;
+  font-weight:650;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  margin:0;
+  white-space:nowrap;
+}
+header .sub{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--steel-lt);
+  letter-spacing:.04em;
+}
+header .spacer{flex:1}
+header button{
+  font-family:var(--sans);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  background:transparent;
+  color:#fff;
+  border:1px solid var(--teal-lt);
+  border-radius:2px;
+  padding:7px 13px;
+  cursor:pointer;
+}
+header button:hover{background:var(--teal)}
+header button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* ---------- tabs ---------- */
+nav.tabs{
+  background:var(--hull-2);
+  display:flex;
+  gap:0;
+  padding:0 20px;
+  overflow-x:auto;
+}
+nav.tabs button{
+  background:transparent;
+  border:none;
+  border-bottom:3px solid transparent;
+  color:var(--steel-lt);
+  font-family:var(--sans);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  padding:11px 16px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+nav.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--teal-lt)}
+nav.tabs button:focus-visible{outline:2px solid var(--teal-lt);outline-offset:-2px}
+
+/* ---------- layout ---------- */
+main{padding:18px 20px 60px;max-width:1680px;margin:0 auto}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}}
+
+.panel{
+  background:var(--deck-2);
+  border:1px solid var(--line);
+  border-radius:3px;
+  margin-bottom:14px;
+}
+.panel > h2{
+  margin:0;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--hull);
+  padding:10px 14px;
+  border-bottom:1px solid var(--line);
+  background:#F7F9F9;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.panel > h2 .tag{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:0;
+  text-transform:none;
+  color:var(--steel);
+  font-weight:400;
+  margin-left:auto;
+}
+.panel .body{padding:12px 14px}
+
+/* ---------- fields ---------- */
+.field{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.field label{flex:1;font-size:12.5px;color:#33474F;line-height:1.25}
+.field input[type=number],.field input[type=text],.field select{
+  width:98px;
+  flex:none;
+  font-family:var(--mono);
+  font-size:12.5px;
+  text-align:right;
+  padding:5px 7px;
+  border:1px solid var(--steel-lt);
+  border-radius:2px;
+  background:#fff;
+  color:var(--hull);
+}
+.field select{text-align:left;width:132px}
+.field input:focus,.field select:focus{outline:2px solid var(--teal-lt);outline-offset:-1px;border-color:var(--teal)}
+.field .unit{font-family:var(--mono);font-size:11px;color:var(--steel);width:26px;flex:none}
+.field.wide input,.field.wide select{width:100%;text-align:left}
+.subhead{
+  font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--teal);margin:14px 0 7px;padding-bottom:4px;border-bottom:1px dotted var(--line);
+}
+.subhead:first-child{margin-top:0}
+.hint{font-size:11.5px;color:var(--steel);margin:6px 0 0;line-height:1.4}
+
+/* ---------- verdict ---------- */
+.verdict{
+  background:var(--hull);color:#fff;border-radius:3px;padding:16px 18px;
+  display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:14px;
+}
+.verdict .num{
+  font-family:var(--mono);font-size:60px;font-weight:600;line-height:.95;letter-spacing:-.03em;
+}
+.verdict .num.zero{color:#FF8A7A}
+.verdict .num.ok{color:#7FD6A8}
+.verdict .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel-lt);margin-bottom:4px}
+.verdict .why{font-size:13px;color:#DCE6EA;max-width:520px;line-height:1.5}
+.verdict .why b{color:#fff}
+
+/* ---------- gates ---------- */
+.gates{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.gate{border:1px solid var(--line);border-left-width:4px;border-radius:2px;background:#fff;padding:10px 12px}
+.gate.pass{border-left-color:var(--pass)}
+.gate.fail{border-left-color:var(--fail)}
+.gate.warn{border-left-color:var(--warn)}
+.gate .g-name{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin-bottom:3px}
+.gate .g-res{font-family:var(--mono);font-size:14px;font-weight:600;margin-bottom:3px}
+.gate.pass .g-res{color:var(--pass)}
+.gate.fail .g-res{color:var(--fail)}
+.gate.warn .g-res{color:var(--warn)}
+.gate .g-det{font-family:var(--mono);font-size:11px;color:#4A5D66;line-height:1.5}
+
+/* ---------- tables ---------- */
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{
+  text-align:left;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--steel);padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:6px 9px;border-bottom:1px solid #EDF1F2;vertical-align:top}
+td.n,th.n{text-align:right;font-family:var(--mono)}
+tr.total td{font-weight:700;border-top:2px solid var(--hull);border-bottom:none;background:#F7F9F9}
+tr.bind td{background:#FFF6E4}
+td .flagbind{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-left:6px}
+tbody tr:hover{background:#F5F9FA}
+.pill{
+  display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:9px;
+  border:1px solid currentColor;line-height:1.5;
+}
+.pill.v{color:var(--pass)} .pill.e{color:var(--warn)} .pill.x{color:var(--fail)}
+
+/* ---------- drawings ---------- */
+.draw-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:1350px){.draw-wrap{grid-template-columns:1fr}}
+svg{display:block;width:100%;height:auto;background:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:12px;padding:9px 14px;border-top:1px solid var(--line);font-size:11px;color:#4A5D66}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:11px;height:11px;border-radius:1px;display:inline-block;border:1px solid rgba(0,0,0,.25)}
+
+.note{
+  background:#FFF8EA;border:1px solid #EBD9B2;border-left:4px solid var(--warn);
+  border-radius:2px;padding:11px 13px;font-size:12.5px;color:#5B4413;line-height:1.5;margin-bottom:14px;
+}
+.note b{color:#3D2C08}
+.hidden{display:none}
+footer{padding:20px;text-align:center;font-size:11px;color:var(--steel);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>WTIV Set Capacity Calculator</h1>
+  <span class="sub" id="stamp"></span>
+  <span class="spacer"></span>
+  <button id="btnSave" style="background:#1a7f37;color:#fff;font-weight:600;padding:6px 16px;border:none;border-radius:4px;cursor:pointer;font-size:13px">Save Data</button>
+  <span id="saveMsg" style="color:#1a7f37;font-weight:600;margin-left:8px;display:none"></span>
+  <button id="btnExport">Export data</button>
+  <button id="btnImport">Import data</button>
+  <button id="btnReset">Reset defaults</button>
+  <input type="file" id="fileIn" accept=".json" class="hidden">
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="calc">Calculator</button>
+  <button role="tab" aria-selected="false" data-tab="fleet">Fleet screening</button>
+  <button role="tab" aria-selected="false" data-tab="data">Vessel &amp; turbine data</button>
+  <button role="tab" aria-selected="false" data-tab="method">Method &amp; assumptions</button>
+</nav>
+
+<main>
+
+<!-- ============ CALCULATOR ============ -->
+<section id="tab-calc">
+<div class="grid">
+
+  <!-- INPUT COLUMN -->
+  <div>
+    <div class="panel">
+      <h2>Vessel <span class="tag" id="vConf"></span></h2>
+      <div class="body">
+        <div class="field wide"><select id="vesselSel"></select></div>
+
+        <div class="subhead">Deck</div>
+        <div class="field"><label for="v_deckArea">Free cargo deck area</label><input type="number" id="v_deckArea" data-v="deckArea"><span class="unit">m²</span></div>
+        <div class="field"><label for="v_deckL">Deck length</label><input type="number" id="v_deckL" data-v="deckL"><span class="unit">m</span></div>
+        <div class="field"><label for="v_deckB">Deck beam</label><input type="number" id="v_deckB" data-v="deckB"><span class="unit">m</span></div>
+        <div class="field"><label for="v_payload">Payload / variable deck load</label><input type="number" id="v_payload" data-v="payload"><span class="unit">t</span></div>
+        <div class="field"><label for="v_deckStr">Deck strength</label><input type="number" id="v_deckStr" data-v="deckStrength" step="0.5"><span class="unit">t/m²</span></div>
+        <div class="field"><label for="v_legWellsIncl">Deck area already excludes leg wells</label><select id="v_legWellsIncl" data-v="legWellsExcluded"><option value="1">Yes</option><option value="0">No</option></select></div>
+        <div class="field"><label for="v_legWell">Leg well side (if deducted)</label><input type="number" id="v_legWell" data-v="legWellSide"><span class="unit">m</span></div>
+
+        <div class="subhead">Legs &amp; hull</div>
+        <div class="field"><label for="v_nLegs">Number of legs</label><select id="v_nLegs" data-v="nLegs"><option value="4">4 legs</option><option value="6">6 legs</option></select></div>
+        <div class="field"><label for="v_accom">Accommodation block length (fwd)</label><input type="number" id="v_accom" data-v="accomLength"><span class="unit">m</span></div>
+        <div class="field"><label for="v_legShape">Leg section</label><select id="v_legShape" data-v="legShape"><option value="tri">Triangular truss</option><option value="sq">Square truss</option><option value="cir">Cylindrical</option></select></div>
+        <div class="field"><label for="v_legLen">Leg length (total)</label><input type="number" id="v_legLen" data-v="legLength"><span class="unit">m</span></div>
+        <div class="field"><label for="v_hullD">Hull depth</label><input type="number" id="v_hullD" data-v="hullDepth"><span class="unit">m</span></div>
+        <div class="field"><label for="v_legRes">Leg reserve above main deck</label><input type="number" id="v_legRes" data-v="legReserve"><span class="unit">m</span></div>
+
+        <div class="subhead">Main crane</div>
+        <div class="field"><label for="v_craneType">Crane type</label><select id="v_craneType" data-v="craneType"><option value="leg">Leg encircling</option><option value="ped">Pedestal</option></select></div>
+        <div class="field"><label for="v_cranePos">Position</label><select id="v_cranePos" data-v="cranePos"><option value="aft-stbd">Aft starboard leg (&minus;y)</option><option value="aft-port">Aft port leg (+y)</option></select></div>
+        <div class="field"><label for="v_boomStow">Boom stow orientation</label><select id="v_boomStow" data-v="boomStow"><option value="diag">Diagonal</option><option value="long">Longitudinal</option></select></div>
+        <div class="field"><label for="v_hook">Main hook height above deck</label><input type="number" id="v_hook" data-v="hookAboveDeck"><span class="unit">m</span></div>
+        <div class="field"><label for="v_boomLen">Boom length</label><input type="number" id="v_boomLen" data-v="boomLength"><span class="unit">m</span></div>
+        <div class="field"><label for="v_boomW">Boom shadow width on deck</label><input type="number" id="v_boomW" data-v="boomStowWidth"><span class="unit">m</span></div>
+        <div class="field"><label for="v_boomClr">Clearance under stowed boom</label><input type="number" id="v_boomClr" data-v="boomClearance" step="0.5"><span class="unit">m</span></div>
+        <div class="field"><label for="v_boomAng">Boom stow angle to centreline</label><input type="number" id="v_boomAng" data-v="boomStowAngle" step="1"><span class="unit">&deg;</span></div>
+        <div class="field"><label for="v_baseArea">Crane base exclusion area</label><input type="number" id="v_baseArea" data-v="craneBaseArea"><span class="unit">m²</span></div>
+        <div class="field"><label for="v_cap1">Capacity at radius 1</label><input type="number" id="v_cap1" data-v="cap1"><span class="unit">t</span></div>
+        <div class="field"><label for="v_r1">&nbsp;&nbsp;&nbsp;radius 1</label><input type="number" id="v_r1" data-v="r1"><span class="unit">m</span></div>
+        <div class="field"><label for="v_cap2">Capacity at radius 2</label><input type="number" id="v_cap2" data-v="cap2"><span class="unit">t</span></div>
+        <div class="field"><label for="v_r2">&nbsp;&nbsp;&nbsp;radius 2</label><input type="number" id="v_r2" data-v="r2"><span class="unit">m</span></div>
+        <p class="hint" id="vSource"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT COLUMN -->
+  <div>
+    <div class="verdict">
+      <div>
+        <div class="lbl">Sets per load</div>
+        <div class="num" id="setCount">0</div>
+      </div>
+      <div>
+        <div class="lbl">Verdict</div>
+        <div class="why" id="verdictText"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Installation gates <span class="tag">any failure forces sets to zero</span></h2>
+      <div class="body"><div class="gates" id="gates"></div></div>
+    </div>
+
+    <div class="draw-wrap">
+      <div class="panel">
+        <h2>Deck arrangement <span class="tag" id="deckScale"></span></h2>
+        <svg id="deckPlan" viewBox="0 0 620 356" role="img" aria-label="Top view of the cargo deck arrangement"></svg>
+        <div class="legend">
+          <span><i style="background:#F4F7F8;border-color:#0B1F2A"></i>Tower, upright</span>
+          <span><i style="background:#F4F7F8;border-color:#0B1F2A"></i>Nacelle</span>
+          <span><i style="background:#DCE3E6"></i>Accommodation</span>
+          <span><i style="background:#9AA7AD"></i>Lifting tools</span>
+          <span><i style="background:#B9895A"></i>Blade rack</span>
+          <span><i style="background:#C9D2D6"></i>Leg well</span>
+          <span><i style="background:#E8DCC4"></i>Boom shadow, nacelles only</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Elevation check <span class="tag">leg stack-up and hook reach</span></h2>
+        <svg id="elevation" viewBox="0 0 620 340" role="img" aria-label="Elevation showing leg length stack-up and hook height"></svg>
+        <div class="legend">
+          <span><i style="background:#BFE0EA"></i>Water column</span>
+          <span><i style="background:#E6D9B8"></i>Seabed / penetration</span>
+          <span><i style="background:#12667E"></i>Hull</span>
+          <span><i style="background:#1F7A4C"></i>Required hub height</span>
+        </div>
+      </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start">
+
+      <!-- COL 1: TURBINE -->
+      <div class="panel">
+        <h2>Turbine</h2>
+        <div class="body">
+          <div class="field wide"><select id="turbineSel"></select></div>
+          <div class="subhead">Machine</div>
+          <div class="field"><label for="t_mw">Rated power</label><input type="number" id="t_mw" data-t="mw" step="0.5"><span class="unit">MW</span></div>
+          <div class="field"><label for="t_rotor">Rotor diameter</label><input type="number" id="t_rotor" data-t="rotor"><span class="unit">m</span></div>
+          <div class="field"><label for="t_hub">Hub height above LAT</label><input type="number" id="t_hub" data-t="hubHeight"><span class="unit">m</span></div>
+          <div class="subhead">One set = tower + nacelle + 3 blades</div>
+          <div class="field"><label for="t_nacW">Nacelle weight, hub included</label><input type="number" id="t_nacW" data-t="nacelleW"><span class="unit">t</span></div>
+          <div class="field"><label for="t_nacA">Nacelle seafastening area</label><input type="number" id="t_nacA" data-t="nacelleArea"><span class="unit">m²</span></div>
+          <div class="field"><label for="t_nacH">Nacelle stow height</label><input type="number" id="t_nacH" data-t="nacelleStowH" step="0.5"><span class="unit">m</span></div>
+          <div class="field"><label for="t_towW">Tower weight (all sections)</label><input type="number" id="t_towW" data-t="towerW"><span class="unit">t</span></div>
+          <div class="field"><label for="t_towA">Tower seafastening area</label><input type="number" id="t_towA" data-t="towerArea"><span class="unit">m²</span></div>
+          <div class="field"><label for="t_towH">Tower stow height (upright)</label><input type="number" id="t_towH" data-t="towerStowH" step="0.5"><span class="unit">m</span></div>
+          <div class="field"><label for="t_towStacks">Tower stacks per set</label><input type="number" id="t_towStacks" data-t="towerStacks" step="1"><span class="unit">#</span></div>
+          <div class="field"><label for="t_bladeW">Blade weight (each)</label><input type="number" id="t_bladeW" data-t="bladeW"><span class="unit">t</span></div>
+          <div class="field"><label for="t_bladeL">Blade length</label><input type="number" id="t_bladeL" data-t="bladeLength"><span class="unit">m</span></div>
+          <div class="field"><label for="t_rackA">Blade rack area, aft, exclusive</label><input type="number" id="t_rackA" data-t="rackArea"><span class="unit">m²</span></div>
+          <div class="field"><label for="t_toolA">Lifting tool stowage area</label><input type="number" id="t_toolA" data-t="toolArea"><span class="unit">m²</span></div>
+          <p class="hint">Seafastening areas include safe gap. Hub ships on the nacelle. Footprints scale by rotor² from 10 MW anchor (102 m² tower, 160 m² nacelle, 550 m² rack).</p>
+        </div>
+      </div>
+
+      <!-- COL 2: DECK AREA BUDGET + BINDING CONSTRAINT -->
+      <div>
+        <div class="panel">
+          <h2>Deck area budget</h2>
+          <div class="body"><table id="areaTable"></table></div>
+        </div>
+        <div class="panel" style="margin-top:14px">
+          <h2>Binding constraint</h2>
+          <div class="body"><table id="limitTable"></table></div>
+        </div>
+      </div>
+
+      <!-- COL 3: OPERATION -->
+      <div class="panel">
+        <h2>Operation</h2>
+        <div class="body">
+          <div class="subhead">Site</div>
+          <div class="field"><label for="o_wd">Water depth (LAT)</label><input type="number" id="o_wd" data-o="waterDepth"><span class="unit">m</span></div>
+          <div class="field"><label for="o_tide">Tide + surge allowance</label><input type="number" id="o_tide" data-o="tide" step="0.5"><span class="unit">m</span></div>
+          <div class="field"><label for="o_air">Air gap (keel to sea level)</label><input type="number" id="o_air" data-o="airGap" step="0.5"><span class="unit">m</span></div>
+          <div class="field"><label for="o_pen">Leg penetration</label><input type="number" id="o_pen" data-o="legPen" step="0.5"><span class="unit">m</span></div>
+          <div class="subhead">Lifting tools</div>
+          <div class="field"><label for="o_ltNac">Nacelle lifting tool</label><input type="number" id="o_ltNac" data-o="toolNacelle"><span class="unit">t</span></div>
+          <div class="field"><label for="o_ltTow">Tower lifting tool</label><input type="number" id="o_ltTow" data-o="toolTower"><span class="unit">t</span></div>
+          <div class="field"><label for="o_ltBld">Blade lifting tool</label><input type="number" id="o_ltBld" data-o="toolBlade"><span class="unit">t</span></div>
+          <div class="field"><label for="o_rig">Rigging + tool height under hook</label><input type="number" id="o_rig" data-o="rigHeight" step="0.5"><span class="unit">m</span></div>
+          <div class="subhead">Lift geometry</div>
+          <div class="field"><label for="o_radMode">Working radius</label><select id="o_radMode" data-o="radiusMode"><option value="auto">Auto: vessel rated radius</option><option value="man">Enter manually</option></select></div>
+          <div class="field"><label for="o_rad">&nbsp;&nbsp;&nbsp;radius</label><input type="number" id="o_rad" data-o="workRadius"><span class="unit">m</span></div>
+          <div class="field"><label for="o_clr">Clearance above hub flange</label><input type="number" id="o_clr" data-o="hookClearance" step="0.5"><span class="unit">m</span></div>
+          <div class="subhead">Deck reserves</div>
+          <div class="field"><label for="o_other">Other project cargo reserve</label><input type="number" id="o_other" data-o="otherCargoPct" step="1"><span class="unit">%</span></div>
+          <div class="field"><label for="o_rackC">Blade rack cap (0 = auto)</label><input type="number" id="o_rackC" data-o="rackSets" step="1" min="0"><span class="unit">sets</span></div>
+          <p class="hint">Blade rack spans the aft end, blades only. Other cargo % reserves space for containers and spares. Lifting tool footprint deducted from turbine data.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</section>
+
+<!-- ============ FLEET ============ -->
+<section id="tab-fleet" class="hidden">
+  <div class="note">
+    Runs the turbine and operation settings from the Calculator tab across every vessel in the database. Change the turbine or the site conditions there and this table follows. Vessels with a missing hook height cannot be gated on reach, so they are shown as unverified rather than passed.
+  </div>
+  <div class="panel">
+    <h2>Fleet screening <span class="tag" id="fleetCtx"></span></h2>
+    <div class="body" style="overflow-x:auto"><table id="fleetTable"></table></div>
+  </div>
+</section>
+
+<!-- ============ DATA ============ -->
+<section id="tab-data" class="hidden">
+  <div class="note">
+    <b>Read this before quoting any number out of this tool.</b> Values marked <span class="pill v">confirmed</span> come from an operator or OEM publication. Values marked <span class="pill e">estimated</span> are placeholders derived by analogy or back-calculation and have not been verified against a class-society or shipyard specification. Replace estimated values with the real figures from the vessel technical file before using output in a tender, and re-export the data so the whole team picks up the correction.
+  </div>
+  <div class="panel">
+    <h2>Vessel database</h2>
+    <div class="body" style="overflow-x:auto"><table id="vDataTable"></table></div>
+  </div>
+  <div class="panel">
+    <h2>Turbine database</h2>
+    <div class="body" style="overflow-x:auto"><table id="tDataTable"></table></div>
+  </div>
+</section>
+
+<!-- ============ METHOD ============ -->
+<section id="tab-method" class="hidden">
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <h2>Calculation order</h2>
+        <div class="body">
+          <p class="hint" style="font-size:12.5px;color:#33474F">
+            The tool runs three installation gates first. If any gate fails, the set count is forced to zero regardless of how much the deck could carry, because a vessel that can transport components but cannot lift them into position is not usable for that turbine.
+          </p>
+          <div class="subhead">Gate 1: water depth</div>
+          <p class="hint">Available leg below hull = leg length &minus; hull depth &minus; leg reserve above main deck.<br>
+          Required = water depth + tide and surge + air gap + leg penetration.</p>
+          <div class="subhead">Gate 2: hook reach</div>
+          <p class="hint">Max hook above sea level = hook height above main deck + hull depth + air gap.<br>
+          Required = hub height + rigging and tool height under the hook + clearance above the hub flange.</p>
+          <div class="subhead">Gate 3: crane capacity</div>
+          <p class="hint">Heaviest lift = the largest of (nacelle + nacelle tool), (tower + tower tool), (blade + blade tool), each including its lifting tool. Compared against the crane capacity interpolated to the working radius from the two entered capacity and radius points.</p>
+          <div class="subhead">Gate 4: deck strength (advisory)</div>
+          <p class="hint">Heaviest component divided by its seafastening footprint, against the deck strength. Flags a warning rather than forcing zero, because local load spreading is a detail design matter.</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>Deck capacity model</h2>
+        <div class="body">
+          <p class="hint" style="font-size:12.5px;color:#33474F">
+          <b>One set.</b> One tower, one nacelle with the hub mounted on it, and three blades. A vessel carrying 6 towers carries 6 nacelles and 18 blades.<br><br>
+          <b>Coordinate convention.</b> x along the centreline, bow at +x. y across the beam, +y to port, &minus;y to starboard. The deck plan looks down, so port is at the top.<br><br>
+          <b>The arrangement is solved, not estimated.</b> The tool places every component on the deck geometrically and increases the set count until something no longer fits. The number and the drawing come from the same routine, so they can never disagree. Clearances use separating-axis tests on the actual footprints rather than circumscribed circles, which over-exclude square seafastenings by roughly 40 percent.<br><br>
+          <b>Zones, aft to forward.</b> Blade rack across the full beam, taking blades only. Crane tub, carrying nothing. The boom stows diagonally at a per-vessel angle, default 17&deg;, and only the run that crosses the cargo deck shadows it; the rest overhangs the bow. Nacelles stow beneath that shadow but stay square to the hull rather than skewed to the boom, since seafastening runs on the ship's own grid. Upright towers can never go under the boom, so they stand clear of it. Nacelles that do not fit under the boom overflow onto open deck and compete with towers for the same ground. A reserve at the forward end holds containers and project kit, and the accommodation block and helideck sit forward of the forward legs.<br><br>
+          <b>Towers hug the sides.</b> Tower positions are filled outboard first, working in from each rail, so the load runs into the side structure rather than the middle of the deck. Only once the rails are full does a tower move inboard.<br><br>
+          <b>Caps.</b> The geometric arrangement, payload divided by set weight, and blade rack capacity. The lowest wins, and any failed installation gate overrides all of it with zero.</p>
+          <div class="subhead">Component footprints</div>
+          <p class="hint">Seafastening areas already contain the safe gap between adjacent units, so the model packs them edge to edge with no further spacing. Anchored on measured 10 MW figures: 102 m&sup2; tower, 160 m&sup2; nacelle, 550 m&sup2; blade rack, 250 m&sup2; lifting tools. Other sizes scale by rotor diameter squared, which independently reproduces a 12.5 m square tower seafastening at 15 MW.</p>
+          <div class="subhead">Calibration</div>
+          <p class="hint">Against the published figures the model returns 5 sets of 15 MW on Wind Maker against 5, four 14 MW sets on Wind Orca against 4, and three 15 MW sets on Wind Orca against 3. Wind Peak returns 6 against a published 7, one short.<br><br>
+          These come out of the geometry rather than a tuned constant, which is the point. If a result looks wrong for a vessel you know, the fix is in that vessel's data, most likely boom shadow width, boom stow angle, accommodation length or crane base area, not in a global fudge factor.</p>
+          <div class="subhead">Not modelled</div>
+          <p class="hint">Transit stability and VCG limits, which often bite before deck area does on a tall stow. Deck load spreading and grillage design. Crane slew interference between stowed cargo and the boom. Jacking cycle time and weather workability, which drive the economics rather than the capacity. Port constraints: quay draft, crane outreach at the marshalling harbour, air draft under bridges. Single blade versus bunny ear installation method. Blade root clearance during slew.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>Internal engineering tool. Output is an estimate for screening and comparison, not a substitute for a stowage plan or a lift study.</footer>
+
+<script>
+"use strict";
+
+/* ============================================================
+   DEFAULT DATA
+   conf: "v" = confirmed from operator/OEM publication
+         "e" = estimated placeholder, needs verification
+   ============================================================ */
+const DEFAULT_VESSELS = [
+// ===== CADELER FLEET =====
+{ id:"windace", name:"Wind Ace", cls:"Cadeler A-class",
+  deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:20,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12.5, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:205, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:280,
+  cap1:3000, r1:39, cap2:1500, r2:75,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"15,000t payload, 5,600m² deck, 3,000t crane, 205m hook above deck, 120m legs. User-confirmed data." },
+{ id:"windally", name:"Wind Ally", cls:"Cadeler A-class",
+  deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:20,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12.5, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:205, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:280,
+  cap1:3000, r1:39, cap2:1500, r2:75,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"Sister to Wind Ace. Same confirmed data." },
+{ id:"windapex", name:"Wind Apex", cls:"Cadeler A-class",
+  deckArea:5600, deckL:162, deckB:60, payload:15000, deckStrength:20,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12.5, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:205, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:280,
+  cap1:3000, r1:39, cap2:1500, r2:75,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"Sister to Wind Ace. Same confirmed data." },
+{ id:"windkeeper", name:"Wind Keeper", cls:"Cadeler, ex-Boqiang 3060",
+  deckArea:3800, deckL:125, deckB:50, payload:11000, deckStrength:12,
+  legWellsExcluded:1, legWellSide:16, nLegs:4, legLength:120, hullDepth:10, legReserve:11,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:144, boomLength:125, boomStowWidth:14, boomStowAngle:14,
+  boomClearance:22, accomLength:22, craneBaseArea:230,
+  cap1:2200, r1:35, cap2:1100, r2:70,
+  conf:{deckArea:"e",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"11,000t payload, 2,200t crane, 144m hook, 120.5m legs. User-confirmed." },
+{ id:"windmaker", name:"Wind Maker", cls:"Cadeler M-class",
+  deckArea:5000, deckL:148, deckB:56, payload:13500, deckStrength:10,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:109, hullDepth:11.5, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:155, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:250,
+  cap1:2600, r1:31, cap2:1300, r2:70,
+  conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
+  source:"5,400m² deck, 2,600t crane, 155m hook, 109m legs. User-confirmed. Target sets: 4/4/8/10." },
+{ id:"windmover", name:"Wind Mover", cls:"Cadeler M-class",
+  deckArea:5000, deckL:148, deckB:56, payload:13500, deckStrength:10,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:109, hullDepth:11.5, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:155, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:250,
+  cap1:2600, r1:31, cap2:1300, r2:70,
+  conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
+  source:"Sister to Wind Maker. Same confirmed data." },
+{ id:"windorca", name:"Wind Orca", cls:"Cadeler O-class",
+  deckArea:4300, deckL:130, deckB:49, payload:11000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:15, nLegs:6, legFwdInAccom:1, legLength:105, hullDepth:10.4, legReserve:10,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:160, boomLength:130, boomStowWidth:12, boomStowAngle:12,
+  boomClearance:20, accomLength:22, craneBaseArea:220,
+  cap1:1600, r1:40, cap2:800, r2:70,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"8,400t payload, 4,300m² deck, 1,600t crane, 159.7m hook, 105m legs, 6 legs (fwd pair in accommodation). User-confirmed. Target sets: 2/3/5/6." },
+{ id:"windosprey", name:"Wind Osprey", cls:"Cadeler O-class",
+  deckArea:4300, deckL:130, deckB:49, payload:11000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:15, nLegs:6, legFwdInAccom:1, legLength:105, hullDepth:10.4, legReserve:10,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:160, boomLength:130, boomStowWidth:12, boomStowAngle:12,
+  boomClearance:20, accomLength:22, craneBaseArea:220,
+  cap1:1600, r1:40, cap2:800, r2:70,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"Sister to Wind Orca. Same confirmed data." },
+{ id:"windpace", name:"Wind Pace", cls:"Cadeler P-class",
+  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:15,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:119, hullDepth:9.7, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:180, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:250,
+  cap1:2600, r1:46, cap2:1600, r2:80,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"15,000t payload, 5,600m² deck, 3,200t crane, 205m hook, 120m legs. User-confirmed." },
+{ id:"windpeak", name:"Wind Peak", cls:"Cadeler P-class",
+  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:15,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:119, hullDepth:9.7, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:180, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:250,
+  cap1:2600, r1:46, cap2:1600, r2:80,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"15,000t payload, 5,800m² deck, 3,200t crane, 205m hook, 120m legs. User-confirmed." },
+{ id:"windscylla", name:"Wind Scylla", cls:"Cadeler legacy",
+  deckArea:5000, deckL:139, deckB:50, payload:8000, deckStrength:10,
+  legWellsExcluded:1, legWellSide:16, nLegs:4, legLength:105, hullDepth:10, legReserve:11,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:139, boomLength:120, boomStowWidth:13, boomStowAngle:13,
+  boomClearance:20, accomLength:22, craneBaseArea:220,
+  cap1:1540, r1:30, cap2:800, r2:60,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"8,180t payload, 4,800m² deck, 1,540t crane, 139m hook, 105m legs. User-confirmed. Target sets: 0/3/5/8." },
+{ id:"cadeler_t1", name:"Cadeler T-class 1", cls:"Cadeler T-class",
+  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:20,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:14, legReserve:14,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:205, boomLength:150, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:26, accomLength:30, craneBaseArea:280,
+  cap1:3000, r1:42, cap2:1500, r2:82,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"17,600t payload, 5,600m² deck, 3,000t crane, 205m hook, 120m legs. User-confirmed." },
+{ id:"cadeler_t2", name:"Cadeler T-class 2", cls:"Cadeler T-class",
+  deckArea:5600, deckL:162, deckB:60, payload:17600, deckStrength:20,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:14, legReserve:14,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:205, boomLength:150, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:26, accomLength:30, craneBaseArea:280,
+  cap1:3000, r1:42, cap2:1500, r2:82,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"Sister to T-class 1." },
+{ id:"windzaratan", name:"Wind Zaratan", cls:"Cadeler, ex-Seajacks NG-5500X",
+  deckArea:2000, deckL:82, deckB:41, payload:12800, deckStrength:10,
+  legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:85, hullDepth:7, legReserve:9,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:111, boomLength:70, boomStowWidth:10, boomStowAngle:10,
+  boomClearance:16, accomLength:17, craneBaseArea:180,
+  cap1:800, r1:24, cap2:400, r2:50,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"2,850t payload, 2,000m² deck, 800t crane, 111m hook, 85m legs. User-confirmed." },
+// ===== ZITON FLEET =====
+{ id:"windenterprise", name:"Wind Enterprise", cls:"ZITON, ex-MPI Enterprise",
+  deckArea:2850, deckL:100, deckB:40, payload:4350, deckStrength:8,
+  legWellsExcluded:1, legWellSide:12, nLegs:6, legLength:78, hullDepth:8, legReserve:9,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:115, boomLength:90, boomStowWidth:8, boomStowAngle:0,
+  boomClearance:15, accomLength:18, craneBaseArea:320,
+  cap1:800, r1:26, cap2:350, r2:50,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"4,350t payload, 2,850m² deck, 800t crane, 115m hook, 78m legs. User-confirmed." },
+{ id:"winddiscovery", name:"Wind Discovery", cls:"ZITON",
+  deckArea:3800, deckL:120, deckB:42, payload:6000, deckStrength:8,
+  legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:73.27, hullDepth:8, legReserve:9,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:139.3, boomLength:100, boomStowWidth:9, boomStowAngle:0,
+  boomClearance:16, accomLength:18, craneBaseArea:320,
+  cap1:1000, r1:26, cap2:500, r2:50,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"6,000t payload, 3,800m² deck, 1,000t crane, 139.3m hook, 73.27m legs. User-confirmed." },
+{ id:"windenergy", name:"Wind Energy", cls:"ZITON E-class",
+  deckArea:2850, deckL:95, deckB:36, payload:4500, deckStrength:8,
+  legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:78, hullDepth:8, legReserve:9,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:115, boomLength:90, boomStowWidth:8, boomStowAngle:0,
+  boomClearance:14, accomLength:17, craneBaseArea:320,
+  cap1:1000, r1:26, cap2:500, r2:50,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"4,500t payload, 2,850m² deck, 1,000t crane, 115m hook, 78m legs. User-confirmed." },
+{ id:"windlift1", name:"Wind Lift 1", cls:"Ex-BARD support",
+  deckArea:2224, deckL:80, deckB:32, payload:2000, deckStrength:6,
+  legWellsExcluded:1, legWellSide:11, nLegs:4, legLength:74, hullDepth:7, legReserve:8,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:121, boomLength:80, boomStowWidth:7, boomStowAngle:0,
+  boomClearance:12, accomLength:14, craneBaseArea:280,
+  cap1:500, r1:20, cap2:250, r2:40,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"2,000t payload, 2,224m² deck, 500t crane, 121m hook, 74m legs. User-confirmed." },
+// ===== FRED OLSEN WINDCARRIER =====
+{ id:"bluetern", name:"Blue Tern", cls:"Fred Olsen Windcarrier, ex-Seafox 5",
+  deckArea:3750, deckL:151, deckB:50, payload:8750, deckStrength:10,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:106, hullDepth:9.75, legReserve:9,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"tri",
+  hookAboveDeck:127, boomLength:90, boomStowWidth:8, boomStowAngle:0,
+  boomClearance:12, accomLength:22, craneBaseArea:280,
+  cap1:800, r1:30, cap2:400, r2:60,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"6,900t payload, 3,500m² deck, 800t crane, 127m hook, 106m legs. User-confirmed. Target sets: 0/2/3/4." },
+{ id:"boldtern", name:"Bold Tern", cls:"Fred Olsen Windcarrier / NG-9000c",
+  deckArea:4000, deckL:132, deckB:45, payload:9000, deckStrength:10,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:92.4, hullDepth:9, legReserve:9,
+  craneType:"leg", cranePos:"aft-port", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:157.5, boomLength:110, boomStowWidth:10, boomStowAngle:15,
+  boomClearance:14, accomLength:20, craneBaseArea:240,
+  cap1:1600, r1:31, cap2:640, r2:30,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"6,500t payload, 3,200m² deck, 1,600t crane, 157.5m hook, 92.4m legs. User-confirmed. Target sets: 0/4/6/8." },
+{ id:"bravetern", name:"Brave Tern", cls:"Fred Olsen Windcarrier / NG-9000c",
+  deckArea:3600, deckL:132, deckB:45, payload:9500, deckStrength:10,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:92.4, hullDepth:9, legReserve:9,
+  craneType:"leg", cranePos:"aft-port", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:157.5, boomLength:110, boomStowWidth:10, boomStowAngle:15,
+  boomClearance:14, accomLength:20, craneBaseArea:240,
+  cap1:1600, r1:24, cap2:720, r2:30,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"9,500t payload, 3,200m² deck, 1,800t crane, 157.5m hook, 92.4m legs. User-confirmed." },
+{ id:"fowic4", name:"FOWIC 4th vessel (planned)", cls:"Fred Olsen Windcarrier / newbuild",
+  deckArea:5000, deckL:162, deckB:58, payload:14000, deckStrength:18,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:120, hullDepth:12, legReserve:12,
+  craneType:"leg", cranePos:"aft-port", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:180, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:26, craneBaseArea:270,
+  cap1:2600, r1:40, cap2:1300, r2:78,
+  conf:{deckArea:"e",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
+  source:"120m legs, 180m hook, 2,600t crane. User-confirmed. Deck area and payload estimated." },
+// ===== VAN OORD =====
+{ id:"boreas", name:"Boreas", cls:"Van Oord / Knud E. Hansen",
+  deckArea:7150, deckL:175, deckB:63, payload:16000, deckStrength:18,
+  legWellsExcluded:1, legWellSide:19, nLegs:4, legLength:126, hullDepth:13.2, legReserve:13,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:180, boomLength:145, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:28, craneBaseArea:280,
+  cap1:3200, r1:40, cap2:1600, r2:80,
+  conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",payload:"e",hullDepth:"e",deckStrength:"e"},
+  source:"7,150m² deck, 3,200t crane, 180m hook, 126m legs. User-confirmed. Target sets: 5/7/9/13." },
+{ id:"aeolus", name:"Aeolus", cls:"Van Oord",
+  deckArea:3800, deckL:139, deckB:38, payload:12000, deckStrength:12,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:85, hullDepth:10, legReserve:10,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:145, boomLength:110, boomStowWidth:10, boomStowAngle:14,
+  boomClearance:14, accomLength:22, craneBaseArea:250,
+  cap1:1600, r1:32, cap2:800, r2:65,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"6,500t payload, 3,776m² deck, 1,600t crane, 145m hook, 81m legs. User-confirmed." },
+{ id:"innovation", name:"Innovation", cls:"Van Oord / A2SEA",
+  deckArea:3600, deckL:147, deckB:42, payload:8000, deckStrength:10,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:95, hullDepth:11, legReserve:10,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:109, boomLength:110, boomStowWidth:10, boomStowAngle:14,
+  boomClearance:14, accomLength:22, craneBaseArea:240,
+  cap1:1500, r1:31.5, cap2:750, r2:60,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
+  source:"8,000t payload, 3,400m² deck, 1,500t crane, 109m hook, 89m legs. User-confirmed." },
+{ id:"seainstaller", name:"Sea Installer", cls:"Van Oord / A2SEA",
+  deckArea:3350, deckL:132, deckB:39, payload:5000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:83, hullDepth:9, legReserve:9,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:157, boomLength:110, boomStowWidth:10, boomStowAngle:14,
+  boomClearance:12, accomLength:20, craneBaseArea:230,
+  cap1:900, r1:24, cap2:800, r2:60,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"7,400t payload, 3,350m² deck, 1,600t crane, 157m hook, 82.5m legs. User-confirmed." },
+{ id:"seachallenger", name:"Sea Challenger", cls:"Van Oord / A2SEA",
+  deckArea:3350, deckL:133, deckB:39, payload:5000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:83, hullDepth:9, legReserve:9,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:157, boomLength:100, boomStowWidth:9, boomStowAngle:14,
+  boomClearance:12, accomLength:18, craneBaseArea:220,
+  cap1:900, r1:24, cap2:800, r2:55,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"7,400t payload, 3,350m² deck, 1,600t crane, 157m hook, 82.5m legs. User-confirmed." },
+{ id:"mpiresolution", name:"MPI Resolution", cls:"Van Oord / MPI Offshore",
+  deckArea:3200, deckL:120, deckB:40, payload:7650, deckStrength:8,
+  legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:70.82, hullDepth:8, legReserve:9,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:92, boomLength:85, boomStowWidth:8, boomStowAngle:0,
+  boomClearance:12, accomLength:18, craneBaseArea:300,
+  cap1:600, r1:22, cap2:300, r2:45,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"7,650t payload, 3,200m² deck, 600t crane, 92m hook, 70.82m legs. User-confirmed." },
+{ id:"mpiadventure", name:"MPI Adventure", cls:"Van Oord / MPI Offshore",
+  deckArea:3500, deckL:120, deckB:40, payload:8000, deckStrength:8,
+  legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:70.82, hullDepth:8, legReserve:9,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:105, boomLength:85, boomStowWidth:8, boomStowAngle:0,
+  boomClearance:12, accomLength:18, craneBaseArea:300,
+  cap1:1000, r1:22, cap2:500, r2:45,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"8,000t payload, 3,500m² deck, 1,000t crane, 105m hook, 70.82m legs. User-confirmed." },
+// ===== JAN DE NUL =====
+{ id:"voltaire", name:"Voltaire", cls:"Jan De Nul / Knud E. Hansen",
+  deckArea:7000, deckL:169, deckB:60, payload:14000, deckStrength:20,
+  legWellsExcluded:1, legWellSide:18, nLegs:4, legLength:130, hullDepth:14.6, legReserve:13,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:162.5, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:25, accomLength:30, craneBaseArea:280,
+  cap1:3000, r1:40, cap2:1600, r2:80,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
+  source:"14,000t payload, 7,000m² deck, 3,200t crane, 162.5m hook, 130m legs. User-confirmed. Target sets: 4/6/9/13." },
+{ id:"voleouvent", name:"Vole au Vent", cls:"Jan De Nul, ex-A2SEA",
+  deckArea:3535, deckL:140, deckB:38, payload:6500, deckStrength:15,
+  legWellsExcluded:1, legWellSide:13, nLegs:4, legLength:90, hullDepth:10, legReserve:10,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"sq",
+  hookAboveDeck:120, boomLength:110, boomStowWidth:10, boomStowAngle:14,
+  boomClearance:14, accomLength:20, craneBaseArea:240,
+  cap1:1500, r1:17, cap2:134, r2:104,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"6,500t payload, 3,535m² deck, 1,500t crane, 120m hook, 90m legs. User-confirmed." },
+// ===== DOMINION ENERGY =====
+{ id:"charybdis", name:"Charybdis", cls:"Dominion Energy / GustoMSC, Jones Act",
+  deckArea:5400, deckL:144, deckB:56, payload:11500, deckStrength:15,
+  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:109, hullDepth:11.6, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:170, boomLength:130, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:22, accomLength:24, craneBaseArea:260,
+  cap1:2200, r1:35, cap2:1100, r2:70,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
+  source:"11,500t payload, 5,400m² deck, 2,200t crane, 170m hook, 109m legs. User-confirmed. Target sets: 3/5/8/10." },
+// ===== SHIMIZU =====
+{ id:"bluewind", name:"Blue Wind", cls:"Shimizu / JMU / NOV GustoMSC NG-20000X",
+  deckArea:4500, deckL:142, deckB:50, payload:2800, deckStrength:18,
+  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:109, hullDepth:12, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:158, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:22, accomLength:26, craneBaseArea:270,
+  cap1:2500, r1:35, cap2:1250, r2:70,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"v",deckStrength:"e"},
+  source:"2,800t payload, 4,500m² deck, 2,500t crane, 158m hook, 109m legs. User-confirmed." },
+// ===== NORSE OFFSHORE =====
+{ id:"norseenergy", name:"Norse Energi", cls:"Norse Offshore WTIV",
+  deckArea:5100, deckL:155, deckB:52, payload:17000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:120, hullDepth:12, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:175, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:24, accomLength:24, craneBaseArea:265,
+  cap1:3250, r1:38, cap2:1625, r2:76,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"17,000t payload, 5,100m² deck, 3,250t crane, 175m hook, 120m legs. User-confirmed. Target sets: 4/6/8/12." },
+{ id:"norsewind", name:"Norse Wind", cls:"Norse Offshore WTIV",
+  deckArea:5100, deckL:155, deckB:52, payload:17000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:120, hullDepth:12, legReserve:12,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:175, boomLength:140, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:24, accomLength:24, craneBaseArea:265,
+  cap1:3250, r1:38, cap2:1625, r2:76,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"Sister to Norse Energi. Same confirmed data." },
+// ===== CDWE / DEME =====
+{ id:"greenjade", name:"Green Jade", cls:"CDWE (CSBC + DEME JV), DP3 HLV",
+  deckArea:8000, deckL:216, deckB:49, payload:30000, deckStrength:20,
+  legWellsExcluded:1, legWellSide:0, nLegs:0, legLength:0, hullDepth:16, legReserve:0,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"tri",
+  hookAboveDeck:125, boomLength:130, boomStowWidth:12, boomStowAngle:0,
+  boomClearance:25, accomLength:30, craneBaseArea:600,
+  cap1:4000, r1:30, cap2:2000, r2:70,
+  conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"x",payload:"e",hullDepth:"e",deckStrength:"e"},
+  source:"NOT A JACK-UP. 8,000m² deck, 4,000t crane, 125m hook. User-confirmed. No legs." },
+// ===== CHINESE / ASIAN VESSELS =====
+{ id:"apollo", name:"Apollo (Da Qiao Xiang Yang)", cls:"Chinese WTIV",
+  deckArea:2000, deckL:90, deckB:36, payload:4500, deckStrength:10,
+  legWellsExcluded:1, legWellSide:12, nLegs:4, legLength:105.8, hullDepth:9, legReserve:9,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
+  hookAboveDeck:110, boomLength:90, boomStowWidth:8, boomStowAngle:0,
+  boomClearance:12, accomLength:16, craneBaseArea:260,
+  cap1:800, r1:26, cap2:400, r2:50,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"4,500t payload, 2,000m² deck, 800t crane, 110m hook, 105.8m legs. User-confirmed." },
+{ id:"kraken", name:"Kraken", cls:"Jack-up platform",
+  deckArea:900, deckL:50, deckB:30, payload:8800, deckStrength:10,
+  legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:84.8, hullDepth:6, legReserve:7,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
+  hookAboveDeck:82.5, boomLength:55, boomStowWidth:5, boomStowAngle:0,
+  boomClearance:8, accomLength:10, craneBaseArea:180,
+  cap1:300, r1:18, cap2:150, r2:35,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"8,800t payload, 900m² deck, 300t crane, 82.5m hook, 84.8m legs. User-confirmed." },
+{ id:"leviathan", name:"Leviathan", cls:"Jack-up platform",
+  deckArea:900, deckL:50, deckB:30, payload:8800, deckStrength:10,
+  legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:84.8, hullDepth:6, legReserve:7,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
+  hookAboveDeck:75, boomLength:55, boomStowWidth:5, boomStowAngle:0,
+  boomClearance:8, accomLength:10, craneBaseArea:180,
+  cap1:400, r1:18, cap2:200, r2:35,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"8,800t payload, 900m² deck, 400t crane, 75m hook, 84.8m legs. User-confirmed." },
+{ id:"hydra", name:"Hydra", cls:"Jack-up platform",
+  deckArea:900, deckL:50, deckB:30, payload:4000, deckStrength:10,
+  legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:84.8, hullDepth:6, legReserve:7,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
+  hookAboveDeck:71, boomLength:55, boomStowWidth:5, boomStowAngle:0,
+  boomClearance:8, accomLength:10, craneBaseArea:180,
+  cap1:400, r1:18, cap2:200, r2:35,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"900m² deck, 400t crane, 71m hook, 84.8m legs. User-confirmed." },
+{ id:"hyundaifrontier", name:"Hyundai Frontier", cls:"Hyundai / Korean WTIV",
+  deckArea:4000, deckL:130, deckB:45, payload:13000, deckStrength:15,
+  legWellsExcluded:1, legWellSide:15, nLegs:4, legLength:83.5, hullDepth:10, legReserve:10,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:145, boomLength:120, boomStowWidth:14, boomStowAngle:15,
+  boomClearance:18, accomLength:22, craneBaseArea:240,
+  cap1:1200, r1:32, cap2:600, r2:60,
+  conf:{deckArea:"e",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"13,000t payload, 1,200t crane, 145m hook, 83.5m legs. User-confirmed. Deck area estimated." },
+// ===== JAPAN DOMESTIC =====
+{ id:"jwindpioneer", name:"J/U Wind Pioneer", cls:"Japan domestic jack-up",
+  deckArea:530, deckL:35, deckB:22, payload:650, deckStrength:8,
+  legWellsExcluded:1, legWellSide:6, nLegs:4, legLength:54, hullDepth:5, legReserve:5,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:70, boomLength:45, boomStowWidth:4, boomStowAngle:0,
+  boomClearance:7, accomLength:6, craneBaseArea:120,
+  cap1:232, r1:15, cap2:116, r2:30,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"650t payload, 530m² deck, 232t crane, 70m hook, 54m legs. User-confirmed." },
+{ id:"jwind", name:"J/U Wind", cls:"Japan domestic jack-up",
+  deckArea:430, deckL:32, deckB:20, payload:220, deckStrength:6,
+  legWellsExcluded:1, legWellSide:5, nLegs:4, legLength:55, hullDepth:4, legReserve:4,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:87, boomLength:40, boomStowWidth:3, boomStowAngle:0,
+  boomClearance:6, accomLength:5, craneBaseArea:100,
+  cap1:150, r1:12, cap2:75, r2:24,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"220t payload, 430m² deck, 150t crane, 87m hook, 55m legs. User-confirmed." },
+{ id:"jwindserver", name:"J/U Wind Server", cls:"Japan domestic jack-up",
+  deckArea:1000, deckL:50, deckB:28, payload:1500, deckStrength:8,
+  legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:65, hullDepth:6, legReserve:6,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:80, boomLength:55, boomStowWidth:5, boomStowAngle:0,
+  boomClearance:8, accomLength:10, craneBaseArea:180,
+  cap1:400, r1:18, cap2:200, r2:36,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"1,500t payload, 1,000m² deck, 400t crane, 80m hook, 65m legs. User-confirmed." },
+// ===== OTHER / NEWBUILDS =====
+{ id:"neptune", name:"Neptune", cls:"Jack-up platform",
+  deckArea:1800, deckL:75, deckB:32, payload:1800, deckStrength:8,
+  legWellsExcluded:1, legWellSide:10, nLegs:4, legLength:92, hullDepth:7, legReserve:8,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"cir",
+  hookAboveDeck:94, boomLength:70, boomStowWidth:6, boomStowAngle:0,
+  boomClearance:10, accomLength:14, craneBaseArea:250,
+  cap1:600, r1:20, cap2:300, r2:40,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"1,800t payload, 1,800m² deck, 600t crane, 94m hook, 92m legs. User-confirmed." },
+{ id:"cp16001", name:"CP-16001", cls:"Chinese design",
+  deckArea:3800, deckL:120, deckB:42, payload:8000, deckStrength:12,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:75, hullDepth:9, legReserve:9,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:130, boomLength:110, boomStowWidth:12, boomStowAngle:14,
+  boomClearance:16, accomLength:20, craneBaseArea:240,
+  cap1:1800, r1:30, cap2:900, r2:60,
+  conf:{deckArea:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",payload:"e",deckStrength:"e"},
+  source:"3,800m² deck, 1,800t crane, 130m hook, 75m legs. User-confirmed." },
+{ id:"oceanwindwtiv", name:"Ocean Wind Power WTIV", cls:"Newbuild WTIV",
+  deckArea:5000, deckL:150, deckB:52, payload:11500, deckStrength:15,
+  legWellsExcluded:1, legWellSide:17, nLegs:4, legLength:109, hullDepth:11, legReserve:11,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:170, boomLength:135, boomStowWidth:18, boomStowAngle:17,
+  boomClearance:22, accomLength:24, craneBaseArea:260,
+  cap1:2600, r1:38, cap2:1300, r2:75,
+  conf:{deckArea:"e",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"11,500t payload, 2,600t crane, 170m hook, 109m legs. User-confirmed. Deck area estimated." },
+{ id:"seawayventus", name:"Seaway Ventus", cls:"Subsea 7 / OHT jack-up",
+  deckArea:4600, deckL:142, deckB:50, payload:10931, deckStrength:10,
+  legWellsExcluded:1, legWellSide:14, nLegs:4, legLength:109, hullDepth:11, legReserve:10,
+  craneType:"leg", cranePos:"aft-stbd", boomStow:"diag", legShape:"tri",
+  hookAboveDeck:116.5, boomLength:120, boomStowWidth:14, boomStowAngle:15,
+  boomClearance:18, accomLength:22, craneBaseArea:250,
+  cap1:2500, r1:30, cap2:900, r2:65,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"10,500t payload, 4,500m² deck, 1,800t crane, 155.4m hook, 104.5m legs. User-confirmed. Target sets: 0/4/6/8." },
+{ id:"gmsendurance", name:"GMS Endurance", cls:"Gulf Marine Services (O&M SEU)",
+  deckArea:1035, deckL:55, deckB:27, payload:1800, deckStrength:8,
+  legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:94.2, hullDepth:5, legReserve:6,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
+  hookAboveDeck:75, boomLength:45, boomStowWidth:5, boomStowAngle:0,
+  boomClearance:8, accomLength:10, craneBaseArea:200,
+  cap1:300, r1:18, cap2:150, r2:35,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"1,800t payload, 1,035m² deck, 300t crane, 75m hook, 94.2m legs. User-confirmed." },
+{ id:"gmsenterprise", name:"GMS Enterprise", cls:"Gulf Marine Services (O&M SEU)",
+  deckArea:1035, deckL:55, deckB:27, payload:1800, deckStrength:8,
+  legWellsExcluded:1, legWellSide:8, nLegs:4, legLength:104, hullDepth:5, legReserve:6,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
+  hookAboveDeck:75, boomLength:45, boomStowWidth:5, boomStowAngle:0,
+  boomClearance:8, accomLength:10, craneBaseArea:200,
+  cap1:400, r1:18, cap2:200, r2:35,
+  conf:{deckArea:"v",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"1,035m² deck, 400t crane, 75m hook, 104m legs. User-confirmed." },
+{ id:"gmsevolution", name:"GMS Evolution", cls:"Gulf Marine Services (O&M SEU)",
+  deckArea:800, deckL:45, deckB:24, payload:3200, deckStrength:7,
+  legWellsExcluded:1, legWellSide:7, nLegs:4, legLength:104, hullDepth:4.5, legReserve:5,
+  craneType:"ped", cranePos:"aft-stbd", boomStow:"long", legShape:"sq",
+  hookAboveDeck:75, boomLength:40, boomStowWidth:4, boomStowAngle:0,
+  boomClearance:7, accomLength:8, craneBaseArea:160,
+  cap1:200, r1:15, cap2:100, r2:30,
+  conf:{deckArea:"e",payload:"v",cap1:"v",hookAboveDeck:"v",legLength:"v",hullDepth:"e",deckStrength:"e"},
+  source:"3,200t payload, 200t crane, 75m hook, 104m legs. User-confirmed." }
+];
+
+
+const DEFAULT_TURBINES = [
+{ id:"t20", name:"20 MW  |  300 m rotor  |  band 15-20 MW",
+  mw:20, rotor:300, hubHeight:165,
+  nacelleW:1250, nacelleArea:399, nacelleStowH:14,
+  towerW:1400, towerArea:254, towerStowH:108, towerStacks:1,
+  bladeW:75, bladeLength:145, rackArea:1091,
+  toolArea:623, conf:"e" },
+{ id:"t18", name:"18 MW  |  280 m rotor  |  band 15-20 MW",
+  mw:18, rotor:280, hubHeight:158,
+  nacelleW:1125, nacelleArea:347, nacelleStowH:13,
+  towerW:1300, towerArea:222, towerStowH:102, towerStacks:1,
+  bladeW:68, bladeLength:135, rackArea:984,
+  toolArea:543, conf:"e" },
+{ id:"t15", name:"15 MW  |  236 m rotor  |  band 15-20 MW",
+  mw:15, rotor:236, hubHeight:145,
+  nacelleW:865, nacelleArea:247, nacelleStowH:12,
+  towerW:1100, towerArea:157, towerStowH:90, towerStacks:1,
+  bladeW:55, bladeLength:115, rackArea:761,
+  toolArea:386, conf:"e" },
+{ id:"t14", name:"14 MW  |  222 m rotor  |  band 12-15 MW",
+  mw:14, rotor:222, hubHeight:140,
+  nacelleW:820, nacelleArea:218, nacelleStowH:12,
+  towerW:1000, towerArea:139, towerStowH:87, towerStacks:1,
+  bladeW:52, bladeLength:108, rackArea:695,
+  toolArea:341, conf:"e" },
+{ id:"t11", name:"11 MW  |  200 m rotor  |  band 6-11 MW",
+  mw:11, rotor:200, hubHeight:125,
+  nacelleW:760, nacelleArea:177, nacelleStowH:11,
+  towerW:850, towerArea:113, towerStowH:78, towerStacks:1,
+  bladeW:47, bladeLength:97, rackArea:594,
+  toolArea:277, conf:"e" },
+{ id:"t10", name:"10 MW  |  190 m rotor  |  band 6-11 MW",
+  mw:10, rotor:190, hubHeight:118,
+  nacelleW:685, nacelleArea:160, nacelleStowH:11,
+  towerW:780, towerArea:102, towerStowH:73, towerStacks:1,
+  bladeW:42, bladeLength:93, rackArea:550,
+  toolArea:250, conf:"a" },
+{ id:"t8", name:"8 MW  |  167 m rotor  |  band 6-11 MW",
+  mw:8, rotor:167, hubHeight:110,
+  nacelleW:510, nacelleArea:124, nacelleStowH:10,
+  towerW:600, towerArea:79, towerStowH:68, towerStacks:1,
+  bladeW:35, bladeLength:81, rackArea:453,
+  toolArea:193, conf:"e" },
+{ id:"t6", name:"6 MW  |  154 m rotor  |  band 6-11 MW",
+  mw:6, rotor:154, hubHeight:102,
+  nacelleW:450, nacelleArea:105, nacelleStowH:10,
+  towerW:500, towerArea:67, towerStowH:63, towerStacks:1,
+  bladeW:27, bladeLength:75, rackArea:401,
+  toolArea:164, conf:"e" },
+{ id:"t5", name:"5 MW  |  130 m rotor  |  band 4-6 MW",
+  mw:5, rotor:130, hubHeight:90,
+  nacelleW:375, nacelleArea:75, nacelleStowH:9,
+  towerW:400, towerArea:48, towerStowH:56, towerStacks:1,
+  bladeW:20, bladeLength:63, rackArea:311,
+  toolArea:117, conf:"e" }
+];
+
+const DEFAULT_OPS = {
+  waterDepth:40, tide:2, airGap:10, legPen:5,
+  toolNacelle:120, toolTower:90, toolBlade:60, rigHeight:14,
+  radiusMode:'auto', workRadius:40, hookClearance:5,
+  otherCargoPct:10, rackSets:0
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let VESSELS, TURBINES, OPS, curV, curT;
+
+function loadDefaults(){
+  VESSELS = JSON.parse(JSON.stringify(DEFAULT_VESSELS));
+  TURBINES = JSON.parse(JSON.stringify(DEFAULT_TURBINES));
+  OPS = JSON.parse(JSON.stringify(DEFAULT_OPS));
+  curV = 0; curT = 2;
+}
+loadDefaults();
+
+const V = () => VESSELS[curV];
+const T = () => TURBINES[curT];
+const n1 = x => (Math.round(x*10)/10).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+const n0 = x => Math.round(x).toLocaleString('en-US');
+
+/* ============================================================
+   SHARED DECK GEOMETRY
+   One routine builds the arrangement. compute() counts what fits,
+   drawDeck() draws exactly the same thing, so the number and the
+   picture can never disagree.
+   ============================================================ */
+function deckZones(v,t,o){
+  const L=v.deckL, B=v.deckB;
+  const accomL=Math.min(v.accomLength||20, L*0.28);
+  const bow=Math.min(L*0.13, B*0.45);
+  const cargoFwd=L-accomL;
+  const rackLen=Math.min(t.rackArea/B, cargoFwd*0.30);
+  const otherArea=v.deckArea*(o.otherCargoPct/100);
+  const otherLen=Math.min(otherArea/B, (cargoFwd-rackLen)*0.28);
+  const cargoAft=rackLen, cargoEnd=cargoFwd-otherLen;
+
+  const nLegs=(v.nLegs===6)?6:4;
+  const inset=B*0.135, legR=Math.min(B*0.072, 5.6);
+  const aftX=cargoAft+legR*2.4, fwdX=cargoEnd-legR*1.6;
+  const midX=(aftX+fwdX)/2;
+  let xs;
+  if(nLegs===6 && v.legFwdInAccom){
+    // fwd pair is inside the accommodation block — only aft and mid pairs are on the cargo deck.
+    // Mid pair sits at ~1/3 of cargo span from aft (not midpoint), matching the O-class layout.
+    const midXAccom=aftX+(fwdX-aftX)*0.45;
+    xs=[aftX, midXAccom];      // cargo-deck legs only
+  } else if(nLegs===6){
+    xs=[aftX, midX, fwdX];
+  } else {
+    xs=[aftX, fwdX];
+  }
+  const legs=[]; xs.forEach((lx,i)=>[inset,B-inset].forEach((ly,k)=>
+    legs.push({mx:lx,my:ly,aft:i===0,port:k===0})));
+  // fwd legs inside accommodation (for drawing only, not for blocking)
+  const accomLegs = (nLegs===6 && v.legFwdInAccom) ?
+    [inset,B-inset].map(ly=>({mx:Math.min(cargoFwd+legR*1.4, L-legR*1.4), my:ly, aft:false, port:ly<B/2, inAccom:true})) : [];
+  const wantPort=(v.cranePos==='aft-port');
+  const cl=legs.find(x=>x.aft&&x.port===wantPort)||legs[0];
+  const cRzone=Math.max(legR*2.2, Math.sqrt(v.craneBaseArea/Math.PI));
+
+  const towSide=Math.sqrt(t.towerArea*Math.max(1,t.towerStacks));
+  const nacSide=Math.sqrt(t.nacelleArea);
+  const thDeg=(v.boomStow==='diag')?(v.boomStowAngle||17):0;
+  const th=thDeg*Math.PI/180, dirY=wantPort?1:-1;
+  const ax=Math.cos(th), ay=dirY*Math.sin(th);
+  // the boom overhangs the bow, only its run across the cargo deck shadows cargo
+  const bLen=Math.max(0,Math.min(v.boomLength,(cargoEnd-cl.mx)/Math.max(0.2,ax)));
+  const bW=v.boomStowWidth;
+  const corr=(mx,my)=>{const dx=mx-cl.mx,dy=my-cl.my;
+    return {u:dx*ax+dy*ay, w:-dx*ay+dy*ax};};
+  const nacFits=(t.nacelleStowH+2)<=v.boomClearance;
+  return {L,B,accomL,bow,cargoFwd,cargoAft,cargoEnd,rackLen,otherLen,otherArea,
+          legs,accomLegs,cl,legR,cRzone,nLegs,towSide,nacSide,thDeg,th,ax,ay,dirY,bLen,bW,corr,
+          nacFits,wantPort};
+}
+
+// Exact clearance tests. Circumscribed circles over-exclude by about 40 percent
+// on square footprints, so use separating axes instead.
+function sqVsSq(a,ha,b,hb){ return Math.abs(a.mx-b.mx) < ha+hb-1e-9 && Math.abs(a.my-b.my) < ha+hb-1e-9; }
+function sqVsCircle(p,h,c,r){
+  const dx=Math.max(0,Math.abs(p.mx-c.mx)-h), dy=Math.max(0,Math.abs(p.my-c.my)-h);
+  return Math.hypot(dx,dy) < r-1e-9;
+}
+// axis-aligned square of half side h against a band of half width hw along (ax,ay)
+function sqVsBand(p,h,corr,bLen,hw,ax,ay){
+  const c=corr(p.mx,p.my);
+  const proj=h*(Math.abs(ax)+Math.abs(ay));   // square radius on the band normal
+  return c.u > -proj && c.u < bLen+proj && Math.abs(c.w) < hw+proj-1e-9;
+}
+
+// Place N complete sets.
+//
+// TOWERS: packed in a tight rectangular group against the ship side (port or stbd).
+// The group sits on the side OPPOSITE the crane so it doesn't clash with the tub.
+// Within that group cells are sorted hull-first (nearest the rail) so load paths run
+// into the side structure. If N towers don't fit in a single side-group the remainder
+// overflow to the second side, still in a tight block.
+//
+// NACELLES: axis-aligned, placed under the boom shadow; overflow onto open deck.
+//
+// BOOM rule: towers are NEVER placed under the boom shadow.
+//
+function arrangeSets(Z,N){
+  const {cl,legs,legR,cRzone,corr,bLen,bW,ax,ay,B,cargoAft,cargoEnd,towSide,nacSide,nacFits}=Z;
+  const occ=[];
+  const legClear=(p,h)=>!legs.some(g=>sqVsCircle(p,h,g,legR)) && !sqVsCircle(p,h,cl,cRzone);
+  const free=(p,h)=>legClear(p,h) && !occ.some(q=>sqVsSq(p,h,q,q.h));
+  const inZone=(p,h)=>p.mx-h>=cargoAft-1e-9 && p.mx+h<=cargoEnd+1e-9 && p.my-h>=-1e-9 && p.my+h<=B+1e-9;
+  const underBoom=(p,h)=>{ const c=corr(p.mx,p.my); return c.u>-h && c.u<bLen+h && Math.abs(c.w)<bW/2+h-1e-9; };
+
+  // --- TOWER PLACEMENT ---
+  // Compact two-row groups on the PORT side, starting just forward of the aft crane leg.
+  // This minimises crane lifting radius. Crane is aft-stbd; towers go port side.
+  //
+  // Layout for N towers:
+  //   Row 1 (hull-flush, port rail): ceil(N/2) towers side by side
+  //   Row 2 (one row inboard):       floor(N/2) towers side by side
+  // Both rows start at the same x (just forward of the crane tub) and stay compact.
+  // For example, 7 towers = 4 in row 1 + 3 in row 2, forming a tight block.
+  const towGroupPort = cl.my >= B/2;    // crane stbd -> towers port
+  const h=towSide/2;
+
+  // Grid helper for nacelles and tools (centred packing, not used for towers)
+  const gridCentred=(side)=>{
+    const hs=side/2, out=[];
+    const rows=Math.max(1,Math.floor(B/side)), y0=(B-rows*side)/2+hs;
+    const cols=Math.max(1,Math.floor((cargoEnd-cargoAft)/side));
+    for(let ci=0;ci<cols;ci++) for(let ri=0;ri<rows;ri++)
+      out.push({mx:cargoAft+hs+ci*side, my:y0+ri*side, h:hs});
+    return out;
+  };
+  const grid=gridCentred;
+
+  // Tower start x: just forward of the crane tub exclusion zone, close to the crane
+  const towStartX = cl.mx + cRzone + h + 0.5;
+
+  // Row y positions: flush to the preferred hull side
+  const row1Y = towGroupPort ? h : (B - h);               // flush to port (or stbd) rail
+  const row2Y = towGroupPort ? h + towSide : (B - h - towSide);  // one row inboard
+
+  const maxPerRow = Math.max(0, Math.floor((cargoEnd - towStartX + 0.1) / towSide));
+
+  const placeTower = (mx, my) => {
+    const p = {mx, my, h};
+    if (!inZone(p, h)) return false;
+    if (underBoom(p, h)) return false;
+    if (!legClear(p, h)) return false;
+    if (occ.some(q => sqVsSq(p, h, q, q.h))) return false;
+    return true;
+  };
+
+  // Split: row 1 gets ceil(N/2), row 2 gets floor(N/2)
+  const r1Target = Math.ceil(N / 2);
+  const tow = [];
+
+  // Row 1: hull-flush, forward from the crane
+  for (let ci = 0; ci < maxPerRow && tow.length < r1Target; ci++) {
+    const mx = towStartX + ci * towSide;
+    if (placeTower(mx, row1Y)) {
+      tow.push({mx, my: row1Y});
+      occ.push({mx, my: row1Y, h});
+    }
+  }
+  const row1Placed = tow.length;
+
+  // Row 2: one row inboard, starting at the same x, up to floor(N/2)
+  for (let ci = 0; ci < maxPerRow && tow.length < N; ci++) {
+    const mx = towStartX + ci * towSide;
+    if (placeTower(mx, row2Y)) {
+      tow.push({mx, my: row2Y});
+      occ.push({mx, my: row2Y, h});
+    }
+  }
+
+  // Overflow to a third row if some towers were blocked by legs/boom
+  if (tow.length < N) {
+    const row3Y = towGroupPort ? h + 2 * towSide : (B - h - 2 * towSide);
+    for (let ci = 0; ci < maxPerRow && tow.length < N; ci++) {
+      const mx = towStartX + ci * towSide;
+      if (placeTower(mx, row3Y)) {
+        tow.push({mx, my: row3Y});
+        occ.push({mx, my: row3Y, h});
+      }
+    }
+  }
+
+  // --- NACELLE PLACEMENT ---
+  // Nacelles go on the CRANE SIDE (stbd when crane is aft-stbd), pushed toward
+  // the hull and starting just forward of the crane tub. Same approach as towers
+  // but on the opposite beam side, under the boom shadow.
+  // Row 1: flush to the crane-side hull. Row 2: one row inboard. Both start at
+  // the same x as towers (just forward of the crane tub) to keep everything
+  // within minimum crane radius.
+  const nac=[];
+  const nh=nacSide/2;
+  const nacStartX = cl.mx + cRzone + nh + 0.5;  // same start as towers
+  const nacMaxPerRow = Math.max(0, Math.floor((cargoEnd - nacStartX + 0.1) / nacSide));
+
+  // Nacelle rows: on the crane side (opposite to towers)
+  const nacRow1Y = towGroupPort ? (B - nh) : nh;               // flush to crane-side hull
+  const nacRow2Y = towGroupPort ? (B - nh - nacSide) : (nh + nacSide);  // one row inboard
+
+  const placeNac = (mx, my) => {
+    const p = {mx, my, h: nh};
+    if (!inZone(p, nh)) return false;
+    if (!legClear(p, nh)) return false;
+    if (occ.some(q => sqVsSq(p, nh, q, q.h))) return false;
+    return true;
+  };
+
+  // Row 1: crane-side hull flush, forward from the crane
+  const nacR1Target = Math.ceil(N / 2);
+  for (let ci = 0; ci < nacMaxPerRow && nac.length < nacR1Target; ci++) {
+    const mx = nacStartX + ci * nacSide;
+    if (placeNac(mx, nacRow1Y)) {
+      nac.push({mx, my: nacRow1Y, under: true});
+      occ.push({mx, my: nacRow1Y, h: nh});
+    }
+  }
+
+  // Row 2: one row inboard on the crane side
+  for (let ci = 0; ci < nacMaxPerRow && nac.length < N; ci++) {
+    const mx = nacStartX + ci * nacSide;
+    if (placeNac(mx, nacRow2Y)) {
+      nac.push({mx, my: nacRow2Y, under: true});
+      occ.push({mx, my: nacRow2Y, h: nh});
+    }
+  }
+
+  // Overflow: if some nacelles still unplaced, try further inboard rows
+  if (nac.length < N) {
+    const nacRow3Y = towGroupPort ? (B - nh - 2*nacSide) : (nh + 2*nacSide);
+    for (let ci = 0; ci < nacMaxPerRow && nac.length < N; ci++) {
+      const mx = nacStartX + ci * nacSide;
+      if (placeNac(mx, nacRow3Y)) {
+        nac.push({mx, my: nacRow3Y, under: false});
+        occ.push({mx, my: nacRow3Y, h: nh});
+      }
+    }
+  }
+
+  // Last resort: any remaining open deck space
+  if (nac.length < N) {
+    const cells = gridCentred(nacSide)
+      .filter(p => inZone(p, p.h))
+      .sort((a,b) => Math.hypot(a.mx-cl.mx, a.my-cl.my) - Math.hypot(b.mx-cl.mx, b.my-cl.my));
+    for (const p of cells) {
+      if (nac.length >= N) break;
+      if (!placeNac(p.mx, p.my)) continue;
+      nac.push({mx: p.mx, my: p.my, under: false});
+      occ.push({mx: p.mx, my: p.my, h: nh});
+    }
+  }
+
+  // --- LIFTING TOOLS ---
+  const tl=Math.sqrt(Z.toolArea), th4=tl/2;
+  let tools=null;
+  {
+    const cc=Math.max(1,Math.floor((cargoEnd-cargoAft)/tl));
+    const rw=Math.max(1,Math.floor(B/tl)), yy=(B-rw*tl)/2+th4;
+    outerX:
+    for(let ci=cc-1;ci>=0;ci--){
+      const mx=cargoAft+th4+ci*tl;
+      for(let ri=0;ri<rw;ri++){
+        const my=yy+ri*tl, p={mx,my,h:th4};
+        if(!inZone(p,th4)||underBoom(p,th4)) continue;
+        if(!free(p,th4)) continue;
+        tools={mx,my,side:tl}; break outerX;
+      }
+    }
+  }
+
+  return {ok: tow.length>=N && nac.length>=N, tow, nac, tools,
+          under: nac.filter(x=>x.under).length};
+}
+
+function deckLayout(v,t,o){
+  const Z=deckZones(v,t,o);
+  Z.toolArea=t.toolArea;
+  let best=arrangeSets(Z,0), maxN=0;
+  for(let N=1; N<=24; N++){
+    const A=arrangeSets(Z,N);
+    if(!A.ok) break;
+    best=A; maxN=N;
+  }
+  return Object.assign({}, Z, {
+    tow:best.tow, nac:best.nac, tools:best.tools,
+    nacUnderBoom:best.under, maxSets:maxN,
+    towerSlots:maxN, nacelleSlots:maxN, arrange:(N)=>arrangeSets(Z,N)
+  });
+}
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+function compute(v, t, o){
+  const R = {};
+
+  // ---- Gate 1: water depth
+  const legAvail = v.legLength - v.hullDepth - v.legReserve;
+  const legNeed  = o.waterDepth + o.tide + o.airGap + o.legPen;
+  R.leg = { avail:legAvail, need:legNeed, margin:legAvail-legNeed, pass:legAvail >= legNeed };
+
+  // ---- Gate 2: hook reach
+  const hookKnown = v.hookAboveDeck > 0;
+  const hookAboveSea = v.hookAboveDeck + v.hullDepth + o.airGap;
+  const hookNeed = t.hubHeight + o.rigHeight + o.hookClearance;
+  R.hook = { known:hookKnown, avail:hookAboveSea, need:hookNeed,
+             margin:hookAboveSea-hookNeed, pass:hookKnown && hookAboveSea >= hookNeed };
+
+  // ---- Gate 3: crane capacity
+  const lifts = [
+    { nm:"Nacelle", w:t.nacelleW + o.toolNacelle },
+    { nm:"Tower",   w:t.towerW/Math.max(1,t.towerStacks) + o.toolTower },
+    { nm:"Blade",   w:t.bladeW + o.toolBlade }
+  ];
+  lifts.sort((a,b)=>b.w-a.w);
+  const heaviest = lifts[0];
+  const RAD = (o.radiusMode === 'auto') ? v.r1 : o.workRadius;
+  R.radius = RAD;
+  let capAtR;
+  if(v.r2 === v.r1){ capAtR = v.cap1; }
+  else {
+    const s = (v.cap2 - v.cap1)/(v.r2 - v.r1);
+    capAtR = v.cap1 + s*(RAD - v.r1);
+  }
+  capAtR = Math.max(0, capAtR);
+  R.crane = { cap:capAtR, need:heaviest.w, item:heaviest.nm,
+              margin:capAtR-heaviest.w, pass:capAtR >= heaviest.w, lifts:lifts };
+
+  // ---- Gate 4: deck strength (advisory)
+  const press = [
+    { nm:"Tower stack", p: (t.towerW/Math.max(1,t.towerStacks))/t.towerArea },
+    { nm:"Nacelle", p: t.nacelleW/Math.max(1,t.nacelleArea) }
+  ].sort((a,b)=>b.p-a.p);
+  R.deckStr = { worst:press[0], limit:v.deckStrength, pass:press[0].p <= v.deckStrength };
+
+  // ---- Deck arrangement, solved geometrically
+  // One set = one tower + one nacelle (hub included) + three blades.
+  // Towers stand upright and cannot go under a stowed boom; nacelles can.
+  // The blade rack spans the aft end, the crane tub carries nothing, and a
+  // reserve at the forward end holds containers and project kit.
+  const G = deckLayout(v,t,o);
+  R.G = G;
+  const towerFP=t.towerArea*Math.max(1,t.towerStacks), nacFP=t.nacelleArea;
+  R.area = {
+    deckArea:v.deckArea, rack:t.rackArea, tools:t.toolArea, otherArea:G.otherArea,
+    boomShadow:G.bLen*G.bW, boomRun:G.bLen, craneBase:v.craneBaseArea,
+    towerFP, nacFP, areaPerSet:towerFP+nacFP,
+    nacFits:G.nacFits, towerFits:(t.towerStowH+2)<=v.boomClearance,
+    boomClearance:v.boomClearance,
+    maxSets:G.maxSets, nacUnderBoom:G.nacUnderBoom,
+    boomTooLong:(v.boomStow==='long')&&(v.boomLength>v.deckL*0.95)
+  };
+  const weightPerSet = t.nacelleW + t.towerW + 3*t.bladeW;
+  R.weightPerSet = weightPerSet;
+
+  const byPayload=Math.max(0,Math.floor(v.payload/weightPerSet));
+  // rackSets==0 means auto (no separate cap); geometry and payload are the binding constraints
+  const byRack = o.rackSets > 0 ? Math.max(0,Math.floor(o.rackSets)) : 999;
+  R.limits = [
+    { nm:"Deck arrangement", val:G.maxSets, det:G.maxSets+" complete sets place without clashing, "+G.nacUnderBoom+" nacelles under the boom" },
+    { nm:"Payload",      val:byPayload,      det:n0(v.payload)+" t / "+n0(weightPerSet)+" t per set" },
+    { nm:"Blade rack",   val:byRack,         det:o.rackSets>0 ? n0(o.rackSets)+" sets (user cap)" : "no cap — limited by geometry and payload" }
+  ];
+  const carry=Math.min(G.maxSets,byPayload,byRack);
+  R.carry=carry;
+  R.binding=R.limits.reduce((a,b)=> b.val<a.val ? b : a);
+
+  // ---- Final
+  const hardFail = !R.leg.pass || !R.crane.pass || (R.hook.known && !R.hook.pass);
+  R.sets = hardFail ? 0 : carry;
+  // Re-run the arrangement for the exact final set count so the drawing
+  // shows the correct tower split (e.g. 4+3 for 7 sets, not 5+2 from a maxSets=9 arrangement)
+  if (R.sets > 0 && R.sets < G.maxSets) {
+    const exact = G.arrange(R.sets);
+    R.G = Object.assign({}, G, { tow: exact.tow, nac: exact.nac, tools: exact.tools,
+      nacUnderBoom: exact.under, maxSets: G.maxSets });
+  }
+  R.hardFail = hardFail;
+  R.unverified = !R.hook.known;
+  return R;
+}
+
+/* ============================================================
+   RENDER: gates + verdict
+   ============================================================ */
+function renderResults(){
+  const v=V(), t=T(), R=compute(v,t,OPS);
+
+  // verdict
+  const el = document.getElementById('setCount');
+  el.textContent = R.sets;
+  el.className = 'num ' + (R.sets===0 ? 'zero' : 'ok');
+
+  let why;
+  if(!R.leg.pass){
+    why = `<b>Cannot jack up at this site.</b> Legs are ${n1(Math.abs(R.leg.margin))} m short of the required stack-up. The deck could hold ${R.carry} sets but the vessel cannot stand on the seabed here.`;
+  } else if(!R.crane.pass){
+    why = `<b>Cannot lift the ${R.crane.item.toLowerCase()}.</b> Needs ${n0(R.crane.need)} t including the lifting tool, crane gives ${n0(R.crane.cap)} t at ${n0(R.radius)} m. The deck could hold ${R.carry} sets but they cannot be installed.`;
+  } else if(R.hook.known && !R.hook.pass){
+    why = `<b>Hook cannot reach hub height.</b> Short by ${n1(Math.abs(R.hook.margin))} m. The deck could carry ${R.carry} sets, so the vessel can transport this turbine but not install it. Not an efficient choice for this segment.`;
+  } else if(R.unverified){
+    why = `<b>${R.carry} sets by deck and payload, reach unverified.</b> ${R.binding.nm.toLowerCase()} is the binding constraint. No hook height on file for ${v.name}, so the reach gate did not run. Enter the real figure before using this number.`;
+  } else {
+    why = `<b>${R.binding.nm} is the binding constraint.</b> All three installation gates pass, with ${n1(R.hook.margin)} m of hook margin and ${n0(R.crane.margin)} t of crane margin at ${n0(R.radius)} m radius.` + (R.area.nacFits ? '' : ` Nacelles will not fit under the ${n1(v.boomClearance)} m boom clearance, so the shadow is dead space.`) + (R.area.boomTooLong ? ` The ${n0(v.boomLength)} m boom will not stow longitudinally on a ${n0(v.deckL)} m deck.` : '');
+  }
+  document.getElementById('verdictText').innerHTML = why;
+
+  // gates
+  const g=[];
+  g.push(gateCard("Water depth", R.leg.pass?"pass":"fail", R.leg.pass?"Clears by "+n1(R.leg.margin)+" m":"Short by "+n1(Math.abs(R.leg.margin))+" m",
+    `Leg below hull &nbsp;${n1(R.leg.avail)} m<br>Required &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${n1(R.leg.need)} m<br><span style="color:#7D8B93">${n0(OPS.waterDepth)} depth + ${n1(OPS.tide)} tide + ${n1(OPS.airGap)} air gap + ${n1(OPS.legPen)} penetration</span>`));
+
+  if(!R.hook.known){
+    g.push(gateCard("Hook reach", "warn", "Not verifiable",
+      `No hook height on file<br>Would need &nbsp;${n1(R.hook.need)} m above sea level<br><span style="color:#7D8B93">${n0(t.hubHeight)} hub + ${n1(OPS.rigHeight)} rigging + ${n1(OPS.hookClearance)} clearance</span>`));
+  } else {
+    g.push(gateCard("Hook reach", R.hook.pass?"pass":"fail", R.hook.pass?"Clears by "+n1(R.hook.margin)+" m":"Short by "+n1(Math.abs(R.hook.margin))+" m",
+      `Hook above sea &nbsp;${n1(R.hook.avail)} m<br>Required &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${n1(R.hook.need)} m<br><span style="color:#7D8B93">${n1(v.hookAboveDeck)} above deck + ${n1(v.hullDepth)} hull + ${n1(OPS.airGap)} air gap</span>`));
+  }
+
+  g.push(gateCard("Crane capacity", R.crane.pass?"pass":"fail", R.crane.pass?n0(R.crane.margin)+" t spare":"Short by "+n0(Math.abs(R.crane.margin))+" t",
+    `Capacity @ ${n0(R.radius)} m &nbsp;${n0(R.crane.cap)} t<br>${R.crane.item} + tool &nbsp;${n0(R.crane.need)} t<br><span style="color:#7D8B93">governing lift of ${R.crane.lifts.length} checked</span>`));
+
+  g.push(gateCard("Deck strength", R.deckStr.pass?"pass":"warn", R.deckStr.pass?"Within limit":"Exceeds limit, check grillage",
+    `${R.deckStr.worst.nm} &nbsp;${n1(R.deckStr.worst.p)} t/m²<br>Deck limit &nbsp;&nbsp;${n1(R.deckStr.limit)} t/m²<br><span style="color:#7D8B93">advisory only, does not zero the count</span>`));
+
+  document.getElementById('gates').innerHTML = g.join('');
+
+  // arrangement table
+  const A=R.area, G=R.G;
+  document.getElementById('areaTable').innerHTML = `
+   <tr><th>Zone, aft to forward</th><th class="n">Extent</th><th>What goes there</th></tr>
+   <tr><td>Blade rack</td><td class="n">${n0(A.rack)} m²</td><td>full beam, ${n0(G.rackLen)} m long, ${R.sets*3} blades and nothing else</td></tr>
+   <tr><td>Crane tub</td><td class="n">${n0(A.craneBase)} m²</td><td>${v.craneType==='leg'?'leg encircling':'pedestal'} on the ${labelPos(v.cranePos)} leg, no cargo</td></tr>
+   <tr><td>Boom shadow</td><td class="n">${n0(A.boomShadow)} m²</td><td>${n0(A.boomRun)} m over deck at ${G.thDeg}&deg; &times; ${n1(G.bW)} m, nacelles only</td></tr>
+   <tr><td>Open deck</td><td class="n">${A.maxSets} sets</td><td>upright towers ${n0(A.towerFP)} m² each, filled outboard first from the rails, plus overflow nacelles</td></tr>
+   <tr><td>Lifting tools</td><td class="n">${n0(A.tools)} m²</td><td>tower, nacelle and blade tools</td></tr>
+   <tr><td>Project cargo reserve</td><td class="n">${n0(A.otherArea)} m²</td><td>${OPS.otherCargoPct}% of deck, containers and spares</td></tr>
+   <tr><td>Accommodation</td><td class="n">${n0(G.accomL)} m</td><td>forward of the forward legs, plus helideck</td></tr>
+   <tr class="total"><td>Arrangement solves</td><td class="n">${A.maxSets} sets</td><td>${A.nacUnderBoom} nacelles fit under the boom, ${Math.max(0,A.maxSets-A.nacUnderBoom)} overflow onto open deck</td></tr>`;
+
+  // limit table
+  document.getElementById('limitTable').innerHTML = `
+   <tr><th>Constraint</th><th class="n">Sets</th><th>Basis</th></tr>` +
+   R.limits.map(l=>`<tr class="${l===R.binding?'bind':''}"><td>${l.nm}${l===R.binding?'<span class="flagbind">binding</span>':''}</td><td class="n">${l.val}</td><td>${l.det}</td></tr>`).join('') +
+   `<tr class="total"><td>Result${R.hardFail?' after gates':''}</td><td class="n" style="color:${R.sets?'var(--pass)':'var(--fail)'}">${R.sets}</td><td>${R.hardFail?'forced to zero by a failed installation gate':'carry capacity, all gates cleared'}</td></tr>`;
+
+  drawDeck(v,t,R);
+  drawElev(v,t,R,OPS);
+  document.getElementById('deckScale').textContent = `${n0(v.deckL)} × ${n0(v.deckB)} m hull, ${n0(v.deckArea)} m² free cargo deck`;
+}
+
+function labelPos(p){ return p==='aft-stbd' ? 'aft starboard' : 'aft port'; }
+function shapeName(x){ return x==='cir' ? 'cylindrical' : (x==='sq' ? 'square truss' : 'triangular truss'); }
+
+function gateCard(name,state,res,det){
+  return `<div class="gate ${state}"><div class="g-name">${name}</div><div class="g-res">${res}</div><div class="g-det">${det}</div></div>`;
+}
+
+/* ============================================================
+   DRAWING: deck plan
+   ============================================================ */
+function drawDeck(v,t,R){
+  const W=620,H=356,padX=26,padY=28;
+  const G=R.G;
+  const totalL=G.L+G.bow;
+  const sc=Math.min((W-2*padX)/totalL,(H-2*padY-14)/G.B);
+  const x0=(W-totalL*sc)/2, y0=(H-G.B*sc)/2+2;
+  const X=m=>x0+m*sc, Y=m=>y0+m*sc, px=m=>m*sc;
+  const MF='font-family="ui-monospace, Menlo, Consolas, monospace"';
+  const B=G.B, L=G.L;
+  let o=[`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`];
+
+  // hull
+  o.push(`<path d="M${X(0)},${Y(0)} H${X(L)} L${X(totalL)},${Y(B/2)} L${X(L)},${Y(B)} H${X(0)} Z"
+     fill="#FAFCFC" stroke="#0B1F2A" stroke-width="1.7"/>`);
+  o.push(`<text x="${X(totalL)}" y="${Y(0)-7}" ${MF} font-size="9" fill="#7D8B93" text-anchor="end">BOW  +x</text>`);
+  o.push(`<text x="${X(0)}" y="${Y(0)-7}" ${MF} font-size="9" fill="#7D8B93">AFT</text>`);
+  o.push(`<text x="${X(0)-5}" y="${Y(4)}" ${MF} font-size="9" fill="#12667E" text-anchor="end">PORT +y</text>`);
+  o.push(`<text x="${X(0)-5}" y="${Y(B)}" ${MF} font-size="9" fill="#12667E" text-anchor="end">STBD &#8722;y</text>`);
+  o.push(`<line x1="${X(0)}" y1="${Y(B/2)}" x2="${X(totalL)}" y2="${Y(B/2)}" stroke="#E4EAED" stroke-width=".9" stroke-dasharray="9 6"/>`);
+
+  // accommodation + helideck forward of the forward legs
+  o.push(`<rect x="${X(G.cargoFwd)}" y="${Y(B*0.08)}" width="${px(G.accomL*0.58)}" height="${px(B*0.84)}" fill="#DCE3E6" stroke="#5B6A70" stroke-width="1.2"/>`);
+  for(let k=1;k<4;k++) o.push(`<line x1="${X(G.cargoFwd+G.accomL*0.58*k/4)}" y1="${Y(B*0.08)}" x2="${X(G.cargoFwd+G.accomL*0.58*k/4)}" y2="${Y(B*0.92)}" stroke="#A8B4B9" stroke-width=".7"/>`);
+  o.push(`<text x="${X(G.cargoFwd+G.accomL*0.29)}" y="${Y(B/2)+3}" ${MF} font-size="7" fill="#3C4A50" text-anchor="middle" transform="rotate(-90 ${X(G.cargoFwd+G.accomL*0.29)} ${Y(B/2)})">ACCOMMODATION</text>`);
+  const hdR=Math.min(B*0.22, G.accomL*0.30);
+  o.push(`<circle cx="${X(L-hdR*0.4)}" cy="${Y(B/2)}" r="${px(hdR)}" fill="#EAF0F2" stroke="#5B6A70" stroke-width="1.1"/>`);
+  o.push(`<text x="${X(L-hdR*0.4)}" y="${Y(B/2)+3.5}" ${MF} font-size="9" fill="#5B6A70" text-anchor="middle">H</text>`);
+
+  // blade rack, full beam aft
+  o.push(`<rect x="${X(0)}" y="${Y(0)}" width="${px(G.rackLen)}" height="${px(B)}" fill="#B9895A" opacity=".42" stroke="#8A6236" stroke-width="1.3"/>`);
+  const tiers=Math.max(3,Math.min(9,R.sets||3));
+  for(let k=1;k<tiers;k++) o.push(`<line x1="${X(0)}" y1="${Y(B*k/tiers)}" x2="${X(G.rackLen)}" y2="${Y(B*k/tiers)}" stroke="#8A6236" stroke-width=".8" opacity=".5"/>`);
+  o.push(`<text x="${X(G.rackLen/2)}" y="${Y(B/2)-2}" ${MF} font-size="8" fill="#4A3117" text-anchor="middle">BLADE RACK</text>`);
+  o.push(`<text x="${X(G.rackLen/2)}" y="${Y(B/2)+9}" ${MF} font-size="7.5" fill="#4A3117" text-anchor="middle">${R.sets*3} BLADES</text>`);
+
+  // forward cargo reserve
+  if(G.otherLen>1){
+    o.push(`<rect x="${X(G.cargoEnd)}" y="${Y(0)}" width="${px(G.otherLen)}" height="${px(B)}" fill="#EDEFEA" stroke="#9AA7AD" stroke-width="1" stroke-dasharray="4 3"/>`);
+    o.push(`<text x="${X(G.cargoEnd+G.otherLen/2)}" y="${Y(B/2)+3}" ${MF} font-size="6.5" fill="#6A767C" text-anchor="middle" transform="rotate(-90 ${X(G.cargoEnd+G.otherLen/2)} ${Y(B/2)})">PROJECT CARGO</text>`);
+  }
+
+  // boom shadow
+  const scrAng=G.dirY*G.thDeg;
+  o.push(`<g transform="translate(${X(G.cl.mx)},${Y(G.cl.my)}) rotate(${scrAng})">
+     <rect x="0" y="${-px(G.bW)/2}" width="${px(G.bLen)}" height="${px(G.bW)}" fill="#E8DCC4" opacity=".5" stroke="#B57314" stroke-width="1" stroke-dasharray="6 4"/>
+     <line x1="0" y1="0" x2="${px(G.bLen)}" y2="0" stroke="#B57314" stroke-width="2.2"/>
+     <polygon points="${px(G.bLen)},0 ${px(G.bLen)-px(G.bW)*0.3},${-px(G.bW)*0.26} ${px(G.bLen)-px(G.bW)*0.3},${px(G.bW)*0.26}" fill="#B57314"/>
+   </g>`);
+
+  // nacelles under the boom
+  G.nac.slice(0,R.sets).forEach(N=>{
+    o.push(`<g transform="translate(${X(N.mx)},${Y(N.my)}) rotate(0)">
+      <rect x="${-px(G.nacSide)*0.5}" y="${-px(G.nacSide)*0.33}" width="${px(G.nacSide)}" height="${px(G.nacSide)*0.66}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1"/>
+      <rect x="${-px(G.nacSide)*0.5}" y="${-px(G.nacSide)*0.33}" width="${px(G.nacSide)*0.24}" height="${px(G.nacSide)*0.66}" fill="#D3DDE1" stroke="#0B1F2A" stroke-width=".7"/>
+      </g>`);
+  });
+
+  // towers: compact two-row groups near the crane, drawn with group outlines
+  const hh=G.towSide/2;
+  const towArr=G.tow.slice(0,R.sets);
+  if(towArr.length){
+    // Identify the two rows by y coordinate
+    const yVals=[...new Set(towArr.map(p=>Math.round(p.my*10)/10))].sort((a,b)=>a-b);
+    const groups=yVals.map(yv=>towArr.filter(p=>Math.abs(p.my-yv)<0.5));
+
+    // Draw a group outline per row
+    groups.forEach((grp,gi)=>{
+      if(!grp.length) return;
+      const gxmin=Math.min(...grp.map(p=>p.mx))-hh;
+      const gxmax=Math.max(...grp.map(p=>p.mx))+hh;
+      const gymin=Math.min(...grp.map(p=>p.my))-hh;
+      const gymax=Math.max(...grp.map(p=>p.my))+hh;
+      o.push(`<rect x="${X(gxmin)}" y="${Y(gymin)}" width="${px(gxmax-gxmin)}" height="${px(gymax-gymin)}" fill="none" stroke="#0B4F6C" stroke-width="1.6" stroke-dasharray="5 3" rx="2"/>`);
+      // label each group
+      const label=grp.length+'T '+(gi===0?'(hull flush)':'(inboard)');
+      const isPort=grp[0].my < G.B/2;
+      o.push(`<text x="${X((gxmin+gxmax)/2)}" y="${isPort?Y(gymin)-5:Y(gymax)+11}" ${MF} font-size="7" fill="#0B4F6C" text-anchor="middle">${label}</text>`);
+    });
+
+    // Overall block label
+    const txmin=Math.min(...towArr.map(p=>p.mx))-hh;
+    const txmax=Math.max(...towArr.map(p=>p.mx))+hh;
+    const tymin=Math.min(...towArr.map(p=>p.my))-hh;
+    const isPort=towArr[0].my < G.B/2;
+    // hull-side hatching
+    const hy = isPort ? Y(tymin) : Y(Math.max(...towArr.map(p=>p.my))+hh);
+    const hDir = isPort ? -1 : 1;
+    for(let hx=txmin+hh; hx<=txmax-hh+1e-6; hx+=G.towSide){
+      o.push(`<line x1="${X(hx)}" y1="${hy}" x2="${X(hx)}" y2="${hy+hDir*px(3.5)}" stroke="#0B4F6C" stroke-width="2"/>`);
+    }
+  }
+  // Draw each tower
+  towArr.forEach(P=>{
+    o.push(`<rect x="${X(P.mx-hh)}" y="${Y(P.my-hh)}" width="${px(G.towSide)}" height="${px(G.towSide)}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1"/>`);
+    o.push(`<circle cx="${X(P.mx)}" cy="${Y(P.my)}" r="${px(G.towSide*0.44)}" fill="#F5F8F9" stroke="#0B1F2A" stroke-width="1.1"/>`);
+    o.push(`<circle cx="${X(P.mx)}" cy="${Y(P.my)}" r="${px(G.towSide*0.29)}" fill="none" stroke="#B4C2C8" stroke-width=".9"/>`);
+  });
+
+  // lifting tools
+  if(G.tools){
+    const s2=G.tools.side;
+    o.push(`<rect x="${X(G.tools.mx-s2/2)}" y="${Y(G.tools.my-s2/2)}" width="${px(s2)}" height="${px(s2)}" fill="#9AA7AD" opacity=".85" stroke="#4A5A61" stroke-width="1"/>`);
+    o.push(`<text x="${X(G.tools.mx)}" y="${Y(G.tools.my)+3}" ${MF} font-size="7" fill="#fff" text-anchor="middle">TOOLS</text>`);
+  }
+
+  // legs and crane on top
+  const legGlyph=(mx,my,r)=>{
+    const cx=X(mx),cy=Y(my),R2=px(r); let g='';
+    if(v.legShape==='cir'){
+      g+=`<circle cx="${cx}" cy="${cy}" r="${R2}" fill="#E4EAEC" stroke="#3C4A50" stroke-width="1.4"/>`;
+      g+=`<circle cx="${cx}" cy="${cy}" r="${R2*0.58}" fill="none" stroke="#8A979D" stroke-width=".8"/>`;
+    } else if(v.legShape==='sq'){
+      g+=`<rect x="${cx-R2}" y="${cy-R2}" width="${R2*2}" height="${R2*2}" fill="#E4EAEC" stroke="#3C4A50" stroke-width="1.4"/>`;
+      g+=`<line x1="${cx-R2}" y1="${cy-R2}" x2="${cx+R2}" y2="${cy+R2}" stroke="#8A979D" stroke-width=".8"/>`;
+      g+=`<line x1="${cx+R2}" y1="${cy-R2}" x2="${cx-R2}" y2="${cy+R2}" stroke="#8A979D" stroke-width=".8"/>`;
+    } else {
+      g+=`<polygon points="${cx},${cy-R2} ${cx+R2*0.866},${cy+R2*0.5} ${cx-R2*0.866},${cy+R2*0.5}" fill="#E4EAEC" stroke="#3C4A50" stroke-width="1.4"/>`;
+      g+=`<polygon points="${cx},${cy+R2*0.14} ${cx+R2*0.43},${cy-R2*0.26} ${cx-R2*0.43},${cy-R2*0.26}" fill="none" stroke="#8A979D" stroke-width=".8"/>`;
+    }
+    return g;
+  };
+  G.legs.forEach(P=>{ if(P!==G.cl) o.push(legGlyph(P.mx,P.my,G.legR)); });
+  if(G.accomLegs) G.accomLegs.forEach(P=>o.push(legGlyph(P.mx,P.my,G.legR)));
+  o.push(`<circle cx="${X(G.cl.mx)}" cy="${Y(G.cl.my)}" r="${px(G.cRzone)}" fill="#F2E7D0" stroke="#B57314" stroke-width="1.5"/>`);
+  o.push(legGlyph(G.cl.mx,G.cl.my,G.legR));
+  o.push(`<text x="${X(G.cl.mx)}" y="${Y(G.cl.my)-px(G.cRzone)-4}" ${MF} font-size="7" fill="#8A5A0F" text-anchor="middle">CRANE, NO CARGO</text>`);
+  o.push(`<g transform="translate(${X(G.cl.mx)},${Y(G.cl.my)}) rotate(${scrAng})">
+     <text x="${px(G.bLen)*0.6}" y="${-px(G.bW)/2-5}" ${MF} font-size="7.5" fill="#8A5A0F" text-anchor="middle">BOOM ${n0(v.boomLength)} m @ ${G.thDeg}&#176; &#183; ${n0(G.bLen)} m OVER DECK &#183; ${n1(v.boomClearance)} m CLEAR UNDER</text></g>`);
+
+  if(R.sets===0){
+    o.push(`<rect x="${X(G.cargoAft)}" y="${Y(B/2)-13}" width="${px(G.cargoEnd-G.cargoAft)}" height="26" fill="#fff" opacity=".93"/>`);
+    o.push(`<text x="${X((G.cargoAft+G.cargoEnd)/2)}" y="${Y(B/2)+4}" ${MF} font-size="12" fill="#A32C1E" text-anchor="middle">NO SETS \u2014 INSTALLATION GATE FAILED</text>`);
+  }
+  const cap = R.sets===0 ? ''
+    : `${R.sets} sets \u00b7 ${R.sets} towers upright clear of the boom \u00b7 ${R.sets} nacelles beneath it \u00b7 ${R.sets*3} blades aft`;
+  o.push(`<text x="${W/2}" y="${H-5}" ${MF} font-size="8.5" fill="#7D8B93" text-anchor="middle">${cap}</text>`);
+  if(!G.nacFits && R.sets===0)
+    o.push(`<text x="${W/2}" y="${H-16}" ${MF} font-size="8.5" fill="#A32C1E" text-anchor="middle">nacelle is taller than the ${n1(v.boomClearance)} m clearance under the boom</text>`);
+  document.getElementById('deckPlan').innerHTML=o.join('');
+}
+
+/* ============================================================
+   DRAWING: elevation
+   ============================================================ */
+function drawElev(v,t,R,o_){
+  const W=620,H=340;
+  let o=[];
+  o.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`);
+
+  // vertical scale: from seabed(-pen) to max of hook / hub
+  const top = Math.max(R.hook.known?R.hook.avail:0, R.hook.need, 40)*1.06;
+  const bot = -(o_.legPen + o_.waterDepth);
+  const yTop=22, yBot=H-30;
+  const sc = (yBot-yTop)/(top-bot);
+  const Y = m => yBot - (m-bot)*sc;
+
+  const xL=70, xR=W-150;
+
+  // seabed
+  o.push(`<rect x="${xL-40}" y="${Y(-o_.waterDepth)}" width="${W-xL+40}" height="${yBot-Y(-o_.waterDepth)}" fill="#E6D9B8"/>`);
+  // water
+  o.push(`<rect x="${xL-40}" y="${Y(0)}" width="${W-xL+40}" height="${Y(-o_.waterDepth)-Y(0)}" fill="#BFE0EA"/>`);
+  o.push(`<line x1="${xL-40}" y1="${Y(0)}" x2="${W}" y2="${Y(0)}" stroke="#3E93AB" stroke-width="1.4"/>`);
+  o.push(`<text x="${W-4}" y="${Y(0)-5}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" fill="#12667E" text-anchor="end">SEA LEVEL / LAT</text>`);
+
+  // hull
+  const keel=o_.airGap, deck=o_.airGap+v.hullDepth;
+  o.push(`<rect x="${xL}" y="${Y(deck)}" width="${xR-xL}" height="${Y(keel)-Y(deck)}" fill="#12667E" stroke="#0B1F2A" stroke-width="1.2"/>`);
+  o.push(`<text x="${(xL+xR)/2}" y="${(Y(deck)+Y(keel))/2+4}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9.5" fill="#fff" text-anchor="middle">HULL ${n1(v.hullDepth)} m</text>`);
+
+  // legs
+  const legTop = deck + v.legReserve;
+  [xL+34, xR-34].forEach(lx=>{
+    o.push(`<rect x="${lx-6}" y="${Y(legTop)}" width="12" height="${Y(-o_.legPen)-Y(legTop)}" fill="#7FB4C4" stroke="#12667E" stroke-width="1.1"/>`);
+    o.push(`<path d="M${lx-16},${Y(-o_.legPen)} h32 l-6,-7 h-20 Z" fill="#7D8B93"/>`);
+  });
+
+  // boom rest clearance band
+  {
+    const cx=xL+34, bc=deck+v.boomClearance;
+    o.push(`<line x1="${cx}" y1="${Y(bc)}" x2="${xR-60}" y2="${Y(bc)}" stroke="#B57314" stroke-width="1.3" stroke-dasharray="4 3"/>`);
+    o.push(`<text x="${xR-58}" y="${Y(bc)+3}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="8.5" fill="#8A5A0F">BOOM UNDERSIDE ${n1(v.boomClearance)} m above deck</text>`);
+    const th=Y(deck)-Y(deck+t.towerStowH);
+    o.push(`<rect x="${xR-46}" y="${Y(deck+t.towerStowH)}" width="10" height="${th}" fill="#12667E" opacity=".55"/>`);
+    o.push(`<text x="${xR-41}" y="${Y(deck+t.towerStowH)-4}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="8" fill="#12667E" text-anchor="middle">TOWER ${n0(t.towerStowH)}</text>`);
+  }
+
+  // crane mast + hook line
+  if(R.hook.known){
+    const cx=xL+34;
+    o.push(`<line x1="${cx}" y1="${Y(deck)}" x2="${cx}" y2="${Y(R.hook.avail)}" stroke="#0B1F2A" stroke-width="2.4"/>`);
+    o.push(`<line x1="${cx}" y1="${Y(R.hook.avail)}" x2="${cx+90}" y2="${Y(R.hook.avail)}" stroke="#0B1F2A" stroke-width="1.6" stroke-dasharray="5 4"/>`);
+    o.push(`<circle cx="${cx+90}" cy="${Y(R.hook.avail)}" r="4" fill="#0B1F2A"/>`);
+    o.push(`<text x="${cx+98}" y="${Y(R.hook.avail)-6}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9.5" fill="#0B1F2A">MAX HOOK ${n1(R.hook.avail)} m</text>`);
+  }
+
+  // required hub height
+  const okc = R.hook.pass ? "#1F7A4C" : "#A32C1E";
+  o.push(`<line x1="${xL-30}" y1="${Y(R.hook.need)}" x2="${W-8}" y2="${Y(R.hook.need)}" stroke="${okc}" stroke-width="1.8" stroke-dasharray="7 4"/>`);
+  o.push(`<text x="${W-8}" y="${Y(R.hook.need)-6}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9.5" fill="${okc}" text-anchor="end">REQ ${n1(R.hook.need)} m = hub ${n0(t.hubHeight)} + rig ${n1(o_.rigHeight)} + clr ${n1(o_.hookClearance)}</text>`);
+
+  // turbine silhouette
+  const tx=xR+55;
+  o.push(`<rect x="${tx-7}" y="${Y(t.hubHeight)}" width="14" height="${Y(0)-Y(t.hubHeight)}" fill="#0B1F2A"/>`);
+  o.push(`<circle cx="${tx}" cy="${Y(t.hubHeight)}" r="7" fill="#1F7A4C"/>`);
+  o.push(`<line x1="${tx}" y1="${Y(t.hubHeight)}" x2="${tx}" y2="${Y(t.hubHeight)-Math.min(50,t.rotor*sc/2)}" stroke="#1F7A4C" stroke-width="4"/>`);
+  o.push(`<text x="${tx}" y="${Y(0)+13}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" fill="#0B1F2A" text-anchor="middle">${t.mw} MW</text>`);
+
+  // dimension callouts on the left
+  const dim=(m1,m2,label)=>{
+    const x=30;
+    o.push(`<line x1="${x}" y1="${Y(m1)}" x2="${x}" y2="${Y(m2)}" stroke="#7D8B93" stroke-width="1"/>`);
+    o.push(`<line x1="${x-4}" y1="${Y(m1)}" x2="${x+4}" y2="${Y(m1)}" stroke="#7D8B93" stroke-width="1"/>`);
+    o.push(`<line x1="${x-4}" y1="${Y(m2)}" x2="${x+4}" y2="${Y(m2)}" stroke="#7D8B93" stroke-width="1"/>`);
+    o.push(`<text x="${x-7}" y="${(Y(m1)+Y(m2))/2+3}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="8.5" fill="#4A5D66" text-anchor="end">${label}</text>`);
+  };
+  dim(0,keel,`air ${n1(o_.airGap)}`);
+  dim(keel,deck,`hull ${n1(v.hullDepth)}`);
+  dim(-o_.waterDepth,0,`WD ${n0(o_.waterDepth)}`);
+  dim(-(o_.legPen+o_.waterDepth),-o_.waterDepth,`pen ${n1(o_.legPen)}`);
+
+  // leg summary badge
+  const bad = R.leg.pass ? "#1F7A4C" : "#A32C1E";
+  o.push(`<rect x="${W-232}" y="${H-24}" width="228" height="20" fill="${bad}" opacity=".1"/>`);
+  o.push(`<text x="${W-8}" y="${H-10}" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9.5" fill="${bad}" text-anchor="end">LEG BELOW HULL ${n1(R.leg.avail)} m vs ${n1(R.leg.need)} m REQUIRED</text>`);
+
+  document.getElementById('elevation').innerHTML=o.join('');
+}
+
+/* ============================================================
+   FLEET
+   ============================================================ */
+function renderFleet(){
+  const t=T();
+  document.getElementById('fleetCtx').textContent =
+    `${t.mw} MW, hub ${t.hubHeight} m  |  ${OPS.waterDepth} m water, ${OPS.airGap} m air gap, ${OPS.legPen} m penetration`;
+  let rows = VESSELS.map(v=>({v, R:compute(v,t,OPS)}));
+  rows.sort((a,b)=> b.R.sets-a.R.sets || b.R.carry-a.R.carry);
+  const body = rows.map(({v,R})=>{
+    let status, cls;
+    if(!R.leg.pass){ status='Water depth fail'; cls='x'; }
+    else if(!R.crane.pass){ status='Crane capacity fail'; cls='x'; }
+    else if(R.hook.known && !R.hook.pass){ status='Hook reach fail'; cls='x'; }
+    else if(!R.hook.known){ status='Reach unverified'; cls='e'; }
+    else { status='All gates pass'; cls='v'; }
+    return `<tr>
+      <td><b>${v.name}</b><br><span style="color:#7D8B93;font-size:11px">${v.cls}</span></td>
+      <td class="n" style="font-size:17px;font-weight:700;color:${R.sets?'var(--pass)':'var(--fail)'}">${R.sets}</td>
+      <td class="n">${R.carry}</td>
+      <td><span class="pill ${cls}">${status}</span></td>
+      <td class="n">${v.hookAboveDeck>0?n1(R.hook.avail):'&mdash;'}</td>
+      <td class="n">${n1(R.hook.need)}</td>
+      <td class="n">${n0(R.crane.cap)}</td>
+      <td class="n">${n0(R.crane.need)}</td>
+      <td class="n">${n1(R.leg.avail)}</td>
+      <td class="n">${n1(R.leg.need)}</td>
+      <td>${R.sets?R.binding.nm:'&mdash;'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('fleetTable').innerHTML=`
+   <tr>
+     <th>Vessel</th><th class="n">Sets</th><th class="n">Carry</th><th>Status</th>
+     <th class="n">Hook a.s.l.</th><th class="n">Hook req.</th>
+     <th class="n">Crane cap.</th><th class="n">Lift req.</th>
+     <th class="n">Leg avail.</th><th class="n">Leg req.</th><th>Binding</th>
+   </tr>${body}`;
+}
+
+/* ============================================================
+   DATA TABLES
+   ============================================================ */
+function confPill(c){
+  if(c==='v') return '<span class="pill v">confirmed</span>';
+  if(c==='x') return '<span class="pill x">missing</span>';
+  return '<span class="pill e">estimated</span>';
+}
+function renderData(){
+  document.getElementById('vDataTable').innerHTML = `
+   <tr><th>Vessel</th><th class="n">Deck m²</th><th class="n">Payload t</th><th class="n">Hook a.d. m</th>
+   <th class="n">Crane t @ m</th><th class="n">Leg m</th><th class="n">Hull m</th><th>Data status</th><th>Source note</th></tr>` +
+   VESSELS.map(v=>`<tr>
+     <td><b>${v.name}</b><br><span style="color:#7D8B93;font-size:11px">${v.cls}</span></td>
+     <td class="n">${n0(v.deckArea)} ${confPill(v.conf.deckArea)}</td>
+     <td class="n">${n0(v.payload)} ${confPill(v.conf.payload)}</td>
+     <td class="n">${v.hookAboveDeck>0?n0(v.hookAboveDeck):'&mdash;'} ${confPill(v.conf.hookAboveDeck)}</td>
+     <td class="n">${n0(v.cap1)} @ ${n0(v.r1)} ${confPill(v.conf.cap1)}</td>
+     <td class="n">${n1(v.legLength)} ${confPill(v.conf.legLength)}</td>
+     <td class="n">${n1(v.hullDepth)} ${confPill(v.conf.hullDepth)}</td>
+     <td class="n">${Object.values(v.conf).filter(c=>c==='v').length}/${Object.values(v.conf).length} confirmed</td>
+     <td style="max-width:340px;font-size:11.5px;color:#4A5D66">${v.source}</td></tr>`).join('');
+
+  document.getElementById('tDataTable').innerHTML = `
+   <tr><th>Turbine</th><th class="n">Rotor m</th><th class="n">Hub m</th><th class="n">Nacelle t</th><th class="n">Tower t</th><th class="n">Blade t</th><th class="n">Tower SF m²</th><th class="n">Nacelle SF m²</th><th class="n">Rack m²</th><th class="n">Set weight t</th><th>Status</th></tr>` +
+   TURBINES.map(t=>`<tr>
+     <td><b>${t.mw} MW</b></td><td class="n">${n0(t.rotor)}</td><td class="n">${n0(t.hubHeight)}</td>
+     <td class="n">${n0(t.nacelleW)}</td><td class="n">${n0(t.towerW)}</td>
+     <td class="n">${n0(t.bladeW)}</td><td class="n">${n0(t.towerArea)}</td><td class="n">${n0(t.nacelleArea)}</td><td class="n">${n0(t.rackArea)}</td>
+     <td class="n">${n0(t.nacelleW+t.towerW+3*t.bladeW)}</td>
+     <td>${t.conf==='a'?'<span class="pill v">anchor set</span>':confPill(t.conf)}</td></tr>`).join('');
+}
+
+/* ============================================================
+   BINDING
+   ============================================================ */
+function fillVesselFields(){
+  const v=V();
+  document.querySelectorAll('[data-v]').forEach(el=>{
+    const k=el.dataset.v;
+    el.value = v[k];
+  });
+  document.getElementById('vSource').textContent = v.source;
+  const conf = Object.values(v.conf);
+  document.getElementById('vConf').textContent =
+    conf.filter(c=>c==='v').length + " of " + conf.length + " key values confirmed";
+}
+function fillTurbineFields(){
+  const t=T();
+  document.querySelectorAll('[data-t]').forEach(el=>{ el.value = t[el.dataset.t]; });
+}
+function fillOpsFields(){
+  document.querySelectorAll('[data-o]').forEach(el=>{ el.value = OPS[el.dataset.o]; });
+}
+
+function bind(){
+  const vs=document.getElementById('vesselSel');
+  vs.innerHTML = VESSELS.map((v,i)=>`<option value="${i}">${v.name} — ${v.cls}</option>`).join('');
+  vs.value=curV;
+  vs.onchange = e => { curV=+e.target.value; fillVesselFields(); refresh(); };
+
+  const ts=document.getElementById('turbineSel');
+  ts.innerHTML = TURBINES.map((t,i)=>`<option value="${i}">${t.name}</option>`).join('');
+  ts.value=curT;
+  ts.onchange = e => { curT=+e.target.value; fillTurbineFields(); refresh(); };
+
+  document.querySelectorAll('[data-v]').forEach(el=>{
+    el.oninput = () => {
+      const k=el.dataset.v;
+      const numericSelects = ['legWellsExcluded','nLegs'];
+      V()[k] = (el.tagName==='SELECT' && numericSelects.includes(k)) ? +el.value
+             : (el.tagName==='SELECT' ? el.value : (el.value===''?0:+el.value));
+      if(k==='hookAboveDeck' && +el.value>0 && V().conf.hookAboveDeck==='x') V().conf.hookAboveDeck='e';
+      refresh();
+    };
+  });
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    el.oninput = () => {
+      const k=el.dataset.t;
+      T()[k] = el.tagName==='SELECT' ? +el.value : (el.value===''?0:+el.value);
+      refresh();
+    };
+  });
+  document.querySelectorAll('[data-o]').forEach(el=>{
+    el.oninput = () => { OPS[el.dataset.o] = (el.tagName==='SELECT') ? el.value : (el.value===''?0:+el.value); refresh(); };
+  });
+
+  document.querySelectorAll('nav.tabs button').forEach(b=>{
+    b.onclick = () => {
+      document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-selected','false'));
+      b.setAttribute('aria-selected','true');
+      ['calc','fleet','data','method'].forEach(id=>
+        document.getElementById('tab-'+id).classList.toggle('hidden', id!==b.dataset.tab));
+      refresh();
+    };
+  });
+
+  // ===== SAVE / LOAD DATA PERSISTENCE =====
+  document.getElementById('btnSave').onclick = () => {
+    const data = {
+      vessels: VESSELS.map(v=>Object.assign({},v)),
+      turbines: TURBINES.map(t=>Object.assign({},t)),
+      ops: Object.assign({},OPS),
+      version: 2,
+      savedAt: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem('wtiv_calc_data', JSON.stringify(data));
+      const msg = document.getElementById('saveMsg');
+      msg.textContent = 'Saved at ' + new Date().toLocaleTimeString();
+      msg.style.display = 'inline';
+      setTimeout(()=>{ msg.style.display='none'; }, 5000);
+    } catch(e){ alert('Save failed: ' + e.message); }
+  };
+
+  // Load saved data on startup — restore previously saved vessel/turbine/ops edits
+  (() => {
+    try {
+      const saved = localStorage.getItem('wtiv_calc_data');
+      if(saved){
+        const d = JSON.parse(saved);
+        if(d.vessels && Array.isArray(d.vessels)){
+          d.vessels.forEach(sv=>{ const v=VESSELS.find(x=>x.id===sv.id); if(v) Object.assign(v,sv); });
+        }
+        if(d.turbines && Array.isArray(d.turbines)){
+          d.turbines.forEach(st=>{ const t=TURBINES.find(x=>x.id===st.id); if(t) Object.assign(t,st); });
+        }
+        if(d.ops) Object.assign(OPS, d.ops);
+      }
+    } catch(e){ console.warn('Could not load saved data:', e.message); }
+  })();
+
+}
+
+function refresh(){
+  renderResults();
+  if(!document.getElementById('tab-fleet').classList.contains('hidden')) renderFleet();
+  if(!document.getElementById('tab-data').classList.contains('hidden')) renderData();
+}
+
+document.getElementById('stamp').textContent = 'rev ' + new Date().toISOString().slice(0,10);
+
+bind(); fillVesselFields(); fillTurbineFields(); fillOpsFields(); refresh();
+</script>
+</body>
+</html>
