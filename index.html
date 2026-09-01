@@ -381,6 +381,14 @@ optgroup{font-weight:700;font-style:normal}
         <div class="subhead">Deck reserves</div>
         <div class="field"><label for="o_other">Other cargo reserve</label><input type="number" id="o_other" data-o="otherCargoPct" step="1"><span class="unit">%</span></div>
         <div class="field"><label for="o_rackC">Blade rack cap (0=auto)</label><input type="number" id="o_rackC" data-o="rackSets" step="1" min="0"><span class="unit">sets</span></div>
+
+        <div class="subhead">Crane radius curves on deck plan</div>
+        <div style="font-size:11px;color:#666;margin:2px 0 8px">Main crane R1 is shown automatically. Add extra radius/SWL points to compare operating zones.</div>
+        <div id="craneExtraList" style="display:flex;flex-direction:column;gap:5px"></div>
+        <button onclick="craneAddPoint()"
+          style="margin-top:6px;padding:4px 12px;font-size:12px;background:var(--teal);color:#fff;border:none;border-radius:3px;cursor:pointer">
+          + Add radius / SWL point
+        </button>
       </div>
     </div>
 
@@ -405,8 +413,6 @@ optgroup{font-weight:700;font-style:normal}
         <span><i style="background:#B9895A"></i>Blade rack</span>
         <span><i style="background:#C9D2D6"></i>Leg well</span>
         <span><i style="background:#E8DCC4"></i>Boom shadow</span>
-        <span><i style="background:none;border:2px dashed #2196F3"></i>Crane R1</span>
-        <span><i style="background:none;border:2px dashed #FF9800"></i>Crane R2</span>
       </div>
     </div>
 
@@ -1722,34 +1728,51 @@ function drawDeck(v,t,R){
   o.push(`<text x="${W/2}" y="${H-5}" ${MF} font-size="8.5" fill="#7D8B93" text-anchor="middle">${cap}</text>`);
   if(!G.nacFits && R.sets===0)
     o.push(`<text x="${W/2}" y="${H-16}" ${MF} font-size="8.5" fill="#A32C1E" text-anchor="middle">nacelle is taller than the ${n1(v.boomClearance)} m clearance under the boom</text>`);
-  // ── Crane working-radius arcs ─────────────────────────────
-  if(R.sets>=0){
+  // ── Crane working-radius arcs — main hook R1 + user-added extra points ──────
+  {
     const cx=X(G.cl.mx), cy=Y(G.cl.my);
-    const r1px=px(v.r1||30), r2px=px(v.r2||60);
-    // Clip arcs to the SVG viewbox (only draw where they cross the deck area)
-    // R1 arc: max rated capacity arc — blue dashed
-    o.push(`<circle cx="${cx}" cy="${cy}" r="${r1px}"
-      fill="none" stroke="#2196F3" stroke-width="1.6" stroke-dasharray="6 4"
-      opacity="0.75" pointer-events="none">`);
-    o.push(`<title>Crane R1: ${v.cap1 || '?'}t at ${v.r1 || '?'}m radius</title></circle>`);
-    // R1 label
-    o.push(`<text x="${cx+r1px+3}" y="${cy}" fill="#2196F3" font-size="9"
-      font-family="monospace" alignment-baseline="middle" pointer-events="none">
-      R1 ${v.r1||'?'}m/${v.cap1||'?'}t</text>`);
-    // R2 arc: secondary capacity arc — orange dashed
-    o.push(`<circle cx="${cx}" cy="${cy}" r="${r2px}"
-      fill="none" stroke="#FF9800" stroke-width="1.4" stroke-dasharray="4 4"
-      opacity="0.65" pointer-events="none">`);
-    o.push(`<title>Crane R2: ${v.cap2 || '?'}t at ${v.r2 || '?'}m radius</title></circle>`);
-    o.push(`<text x="${cx+r2px+3}" y="${cy}" fill="#FF9800" font-size="9"
-      font-family="monospace" alignment-baseline="middle" pointer-events="none">
-      R2 ${v.r2||'?'}m/${v.cap2||'?'}t</text>`);
-  }
-  // ── Update crane legend ────────────────────────────────────────────────────
-  const cl=document.getElementById('craneLegend');
-  if(cl && R.sets>=0){
-    cl.innerHTML=`<span><i style="display:inline-block;width:24px;height:0;border-top:2px dashed #2196F3"></i>R1: <b>${v.cap1||'?'}t</b> @ ${v.r1||'?'}m</span>
-    <span><i style="display:inline-block;width:24px;height:0;border-top:2px dashed #FF9800"></i>R2: <b>${v.cap2||'?'}t</b> @ ${v.r2||'?'}m</span>`;
+    const COLORS=['#2196F3','#FF9800','#4CAF50','#9C27B0','#F44336','#00BCD4','#FF5722'];
+
+    // Always draw main crane R1
+    if(v.r1){
+      const r1px=px(v.r1);
+      o.push(`<circle cx="${cx}" cy="${cy}" r="${r1px}"
+        fill="none" stroke="${COLORS[0]}" stroke-width="1.8" stroke-dasharray="7 4"
+        opacity="0.80" pointer-events="none">
+        <title>Main crane: ${v.cap1||'?'}t at ${v.r1}m radius</title></circle>`);
+      const lx=Math.min(cx+r1px+3, 614), ly=cy-6;
+      o.push(`<text x="${lx}" y="${ly}" fill="${COLORS[0]}" font-size="8.5"
+        font-family="monospace" pointer-events="none" font-weight="600">R1 ${v.r1}m/${v.cap1||'?'}t</text>`);
+    }
+
+    // User-added extra crane radius points (craneExtraPoints array)
+    if(typeof craneExtraPoints !== 'undefined'){
+      craneExtraPoints.forEach((pt,i)=>{
+        if(!pt.r || pt.r<=0) return;
+        const color=COLORS[(i+1)%COLORS.length];
+        const rpx=px(pt.r);
+        o.push(`<circle cx="${cx}" cy="${cy}" r="${rpx}"
+          fill="none" stroke="${color}" stroke-width="1.4" stroke-dasharray="4 3"
+          opacity="0.70" pointer-events="none">
+          <title>User radius ${i+1}: ${pt.swl||'?'}t at ${pt.r}m</title></circle>`);
+        const lx2=Math.min(cx+rpx+3, 614), ly2=cy+10*(i+1);
+        o.push(`<text x="${lx2}" y="${ly2}" fill="${color}" font-size="8"
+          font-family="monospace" pointer-events="none">R${i+2} ${pt.r}m/${pt.swl||'?'}t</text>`);
+      });
+    }
+
+    // Update dynamic legend
+    const cl=document.getElementById('craneLegend');
+    if(cl){
+      let leg=`<span><i style="display:inline-block;width:24px;height:0;border-top:2.5px dashed ${COLORS[0]}"></i>R1 main: <b>${v.cap1||'?'}t</b> @ ${v.r1||'?'}m</span>`;
+      if(typeof craneExtraPoints !== 'undefined'){
+        craneExtraPoints.forEach((pt,i)=>{
+          const color=COLORS[(i+1)%COLORS.length];
+          leg+=`<span><i style="display:inline-block;width:24px;height:0;border-top:2px dashed ${color}"></i>R${i+2}: <b>${pt.swl||'?'}t</b> @ ${pt.r||'?'}m</span>`;
+        });
+      }
+      cl.innerHTML=leg;
+    }
   }
   document.getElementById('deckPlan').innerHTML=o.join('');
   // After setting innerHTML, attach drag behaviour
@@ -2224,7 +2247,65 @@ function clearGuides(){
   if(DS.svg) DS.svg.querySelectorAll('.snap-guide').forEach(g=>g.remove());
 }
 
-bind(); fillVesselFields(); fillTurbineFields(); fillOpsFields(); refresh();
+// ===== CRANE EXTRA RADIUS POINTS =====
+// User-defined additional crane radius/SWL curves on the deck plan.
+// The main crane R1 is always drawn from vessel data.
+// craneExtraPoints stores [{r, swl}] for user-added arcs.
+const CRANE_ARC_COLORS = ['#2196F3','#FF9800','#4CAF50','#9C27B0','#F44336','#00BCD4','#FF5722'];
+let craneExtraPoints = [];   // [{r: number, swl: number}]
+
+function craneRenderList(){
+  const el = document.getElementById('craneExtraList');
+  if(!el) return;
+  if(craneExtraPoints.length === 0){
+    el.innerHTML = '<div style="font-size:11px;color:#aaa;font-style:italic">No extra radii added</div>';
+    return;
+  }
+  el.innerHTML = craneExtraPoints.map((pt, i)=>{
+    const color = CRANE_ARC_COLORS[(i+1) % CRANE_ARC_COLORS.length];
+    return `<div style="display:flex;align-items:center;gap:6px;background:#f7f9fa;border-radius:4px;padding:4px 6px">
+      <span style="display:inline-block;width:18px;height:2px;background:${color};flex-shrink:0;border-radius:1px"></span>
+      <span style="font-size:11px;color:#555;white-space:nowrap">R${i+2}</span>
+      <input type="number" value="${pt.r||''}" placeholder="Radius m" min="1" max="200" step="1"
+        style="width:62px;font-size:12px;padding:2px 4px;border:1px solid #ccc;border-radius:3px"
+        oninput="craneExtraPoints[${i}].r=+this.value||0;refresh()">
+      <span style="font-size:11px;color:#888">m</span>
+      <input type="number" value="${pt.swl||''}" placeholder="SWL t" min="1" max="20000" step="10"
+        style="width:66px;font-size:12px;padding:2px 4px;border:1px solid #ccc;border-radius:3px"
+        oninput="craneExtraPoints[${i}].swl=+this.value||0;refresh()">
+      <span style="font-size:11px;color:#888">t</span>
+      <button onclick="craneRemovePoint(${i})"
+        style="margin-left:auto;padding:1px 6px;font-size:12px;background:none;border:1px solid #ccc;border-radius:3px;cursor:pointer;color:#888"
+        title="Remove this radius">×</button>
+    </div>`;
+  }).join('');
+}
+
+function craneAddPoint(){
+  // Default to a radius halfway between R1 and the deck edge
+  const v = VESSELS[curV];
+  const defaultR = v ? Math.round((v.r1||30) * 1.4) : 50;
+  const defaultSWL = v ? Math.round((v.cap1||1000) * 0.6) : 500;
+  craneExtraPoints.push({r: defaultR, swl: defaultSWL});
+  craneRenderList();
+  refresh();
+}
+
+function craneRemovePoint(i){
+  craneExtraPoints.splice(i, 1);
+  craneRenderList();
+  refresh();
+}
+
+// When vessel changes, update the R1 info display in the op panel
+function updateCraneR1Display(){
+  const v = VESSELS[curV];
+  if(!v) return;
+  const el = document.getElementById('craneR1Info');
+  if(el) el.textContent = `Main crane (R1): ${v.cap1||'?'} t @ ${v.r1||'?'} m (from vessel data)`;
+}
+
+bind(); fillVesselFields(); fillTurbineFields(); fillOpsFields(); craneRenderList(); refresh();
 
 </script>
 </body>
